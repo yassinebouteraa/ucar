@@ -163,13 +163,15 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 40, damping: 20, delay: 0.2 }}
-              src="/page%20vid.mp4"
               autoPlay
               loop
               muted
               playsInline
               className="relative z-10 w-[480px] h-auto object-contain rounded-[60px]"
-            />
+              onError={(e) => { (e.currentTarget as HTMLVideoElement).style.display = 'none' }}
+            >
+              <source src="/page-vid.mp4" type="video/mp4" />
+            </motion.video>
 
             {/* Floating Badge */}
             <motion.div 
