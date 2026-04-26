@@ -1,50 +1,69 @@
+'use client'
+
 import { Search, Bell, Settings } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function Navbar() {
   return (
-    <header className="h-16 bg-[#0F172A] flex items-center px-6 fixed top-0 left-0 right-0 z-50">
+    <motion.header 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+      className="h-16 bg-[#0F172A] flex items-center px-6 fixed top-0 left-0 right-0 z-50 shadow-md shadow-slate-900/20"
+    >
       <div className="flex items-center gap-3">
-        <div className="bg-cyan-500 rounded-lg w-8 h-8 flex items-center justify-center text-white font-bold text-sm">
+        <motion.div 
+          whileHover={{ rotate: 10, scale: 1.05 }}
+          className="bg-cyan-500 rounded-lg w-8 h-8 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-cyan-500/20"
+        >
           UC
-        </div>
-        <span className="text-white font-semibold text-sm">UCAR Pulse</span>
+        </motion.div>
+        <span className="text-white font-semibold text-sm tracking-wide">UCAR Pulse</span>
       </div>
 
       <div className="flex-1 max-w-xl mx-12">
         <div className="relative group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-cyan-400 transition-colors" size={16} />
-          <input 
+          <motion.input 
+            whileFocus={{ scale: 1.01 }}
             type="text" 
             placeholder="Rechercher un établissement..."
-            className="w-full bg-[#1E293B] border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition-all"
+            className="w-full bg-[#1E293B] border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
           />
         </div>
       </div>
 
       <div className="flex items-center gap-6 ml-auto">
-        <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-[#1E293B] border border-slate-700 rounded-md text-[11px] text-slate-400">
+        <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-[#1E293B] border border-slate-700 rounded-md text-[11px] text-slate-400 font-medium">
           <span>Tunis</span>
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="text-slate-400 hover:text-white transition-colors relative">
+          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="text-slate-400 hover:text-white transition-colors relative">
             <Bell size={18} />
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#0F172A]"></span>
-          </button>
-          <button className="text-slate-400 hover:text-white transition-colors">
+            <motion.span 
+              animate={{ scale: [1, 1.2, 1] }} 
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#0F172A]"
+            ></motion.span>
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }} className="text-slate-400 hover:text-white transition-colors">
             <Settings size={18} />
-          </button>
+          </motion.button>
         </div>
 
         <div className="flex items-center gap-3 pl-6 border-l border-slate-700">
           <div className="text-right hidden sm:block">
             <p className="text-xs font-medium text-white">rectorat@ucar.tn</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-cyan-500/20">
+          <motion.div 
+            whileHover={{ scale: 1.05 }}
+            className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-cyan-500/20 cursor-pointer"
+          >
             PU
-          </div>
+          </motion.div>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }

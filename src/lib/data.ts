@@ -61,6 +61,7 @@ export const institutions: Institution[] = [
     status: 'Nominal',
     initials: 'EN',
     color: '#CFFAFE',
+    logo: '/enstab-logo.jpg',
     story: 'Référence du réseau — meilleur taux d\'insertion professionnelle, recherche soutenue, finances saines.',
   },
   {
@@ -78,6 +79,7 @@ export const institutions: Institution[] = [
     status: 'Attention',
     initials: 'IE',
     color: '#EFF6FF',
+    logo: '/isste-logo.png',
     story: 'Excellents résultats académiques mais 47% d\'exécution budgétaire — équipement IT en dégradation.',
   },
   {
@@ -95,6 +97,7 @@ export const institutions: Institution[] = [
     status: 'Critique',
     initials: 'IC',
     color: '#FFF7ED',
+    logo: '/logos/istic.svg',
     story: 'Crise RH — absentéisme à 13%, formation à 29%. Résultats académiques en baisse chaque semestre.',
   },
   {
@@ -112,6 +115,7 @@ export const institutions: Institution[] = [
     status: 'Critique',
     initials: 'SC',
     color: '#FEE2E2',
+    logo: '/logos/supcom.svg',
     story: 'Crise abandon — taux passé de 19% à 28% en 3 semestres. Assiduité en chute.',
   },
   {
@@ -129,6 +133,7 @@ export const institutions: Institution[] = [
     status: 'Hors ligne',
     initials: 'IH',
     color: '#F1F5F9',
+    logo: '/logos/ihec.jpg',
     story: 'Aucun fichier soumis pour la période en cours — rapport en mode fallback.',
   },
 ]

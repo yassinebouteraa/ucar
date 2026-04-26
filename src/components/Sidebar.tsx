@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation'
 import {
   Home,
   Building2,
-  Bot,
+  Scale,
   BarChart3,
   Upload,
-  Scale,
   LogOut,
 } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { motion } from 'framer-motion'
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -29,50 +29,95 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname()
 
+  const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 70 } }
+  }
+
   return (
     <aside className="bg-white border-r border-slate-200 w-56 min-h-screen fixed left-0 top-0 pt-16 flex flex-col z-40">
       <nav className="flex-1 px-0 py-4">
-        <ul className="space-y-1">
+        <motion.ul 
+          variants={listVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-1"
+        >
           {navItems.map((item) => {
             const isActive = pathname === item.href
             return (
-              <li key={item.href}>
+              <motion.li variants={itemVariants} key={item.href}>
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 w-full transition-colors",
+                    "flex items-center gap-3 px-4 py-3 w-full transition-all relative group overflow-hidden",
                     isActive 
-                      ? "bg-cyan-50 text-cyan-600 border-r-2 border-cyan-500 font-semibold" 
-                      : "text-slate-600 hover:bg-slate-50"
+                      ? "bg-cyan-50 text-cyan-700 font-bold" 
+                      : "text-slate-600 hover:bg-slate-50 font-medium"
                   )}
                 >
-                  <item.icon size={18} />
+                  {/* Active Indicator Line */}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="active-nav-indicator"
+                      className="absolute right-0 top-0 bottom-0 w-1.5 bg-cyan-500 rounded-l-full"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  
+                  <motion.div 
+                    whileHover={{ scale: 1.1, rotate: 5 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className={isActive ? "text-cyan-600" : "text-slate-400 group-hover:text-slate-600"}
+                  >
+                    <item.icon size={18} />
+                  </motion.div>
                   <span className="text-sm">{item.label}</span>
                 </Link>
-              </li>
+              </motion.li>
             )
           })}
-        </ul>
+        </motion.ul>
       </nav>
 
-      <div className="p-4 border-t border-slate-100 mt-auto">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+        className="p-4 border-t border-slate-100 mt-auto"
+      >
         <div className="flex items-center gap-3 mb-4 px-2">
-          <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-cyan-600/20">
             PU
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-slate-700">Présidente UCAR</span>
-            <span className="text-xs text-slate-500">rectorat@ucar.tn</span>
+            <span className="text-sm font-bold text-slate-800">Présidente UCAR</span>
+            <span className="text-xs font-medium text-slate-500">rectorat@ucar.tn</span>
           </div>
         </div>
         <Link 
           href="/login"
-          className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
+          className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full font-semibold group"
         >
-          <LogOut size={16} />
-          <span className="text-sm font-medium">Déconnexion</span>
+          <motion.div whileHover={{ x: -3 }} className="text-slate-400 group-hover:text-red-500">
+            <LogOut size={16} />
+          </motion.div>
+          <span className="text-sm">Déconnexion</span>
         </Link>
-      </div>
+      </motion.div>
     </aside>
   )
 }

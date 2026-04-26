@@ -76,57 +76,67 @@ export default function Dashboard() {
 
         {/* 1. Global KPIs Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-cyan-200 transition-colors">
-            <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity scale-150">
-              <Award size={80} className="text-emerald-500" />
+          
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-600">Taux de Réussite Moyen</h3>
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <Award size={18} className="text-emerald-600" />
+              </div>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Taux de Réussite Moyen</p>
-            <div className="flex items-baseline gap-2 relative z-10">
-              <span className="text-3xl font-black text-slate-800">{globalSuccessRate}%</span>
+            <div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{globalSuccessRate}%</div>
+              <p className="text-sm text-emerald-600 flex items-center gap-1 font-medium">
+                <TrendingUp size={14} /> <span>+2.4%</span> <span className="text-slate-500 font-normal">vs an dernier</span>
+              </p>
             </div>
-            <p className="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2 relative z-10">
-              <TrendingUp size={12} /> +2.4% vs an dernier
-            </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-cyan-200 transition-colors">
-            <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity scale-150">
-              <Wallet size={80} className="text-blue-500" />
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-600">Exécution Budgétaire</h3>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Wallet size={18} className="text-blue-600" />
+              </div>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Exécution Budgétaire</p>
-            <div className="flex items-baseline gap-2 relative z-10">
-              <span className="text-3xl font-black text-slate-800">{globalBudgetExecution}%</span>
+            <div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{globalBudgetExecution}%</div>
+              <p className="text-sm text-slate-500 flex items-center gap-1 font-normal">
+                <Activity size={14} className="text-slate-400" /> <span>Moyenne réseau en phase</span>
+              </p>
             </div>
-            <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-2 relative z-10">
-              <Activity size={12} /> Moyenne réseau en phase
-            </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-cyan-200 transition-colors">
-            <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity scale-150">
-              <AlertTriangle size={80} className="text-amber-500" />
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-600">Taux d'Abandon Moyen</h3>
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <AlertTriangle size={18} className="text-amber-600" />
+              </div>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Taux d'Abandon Moyen</p>
-            <div className="flex items-baseline gap-2 relative z-10">
-              <span className="text-3xl font-black text-slate-800">{globalDropoutRate}%</span>
+            <div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{globalDropoutRate}%</div>
+              <p className="text-sm text-amber-600 flex items-center gap-1 font-medium">
+                <TrendingUp size={14} /> <span>+0.5%</span> <span className="text-slate-500 font-normal">(Attention requise)</span>
+              </p>
             </div>
-            <p className="text-xs font-bold text-amber-500 flex items-center gap-1 mt-2 relative z-10">
-              <TrendingUp size={12} /> +0.5% (Attention requise)
-            </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-cyan-200 transition-colors">
-            <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity scale-150">
-              <BookOpen size={80} className="text-indigo-500" />
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-slate-600">Publications Totales</h3>
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <BookOpen size={18} className="text-indigo-600" />
+              </div>
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 relative z-10">Publications Totales</p>
-            <div className="flex items-baseline gap-2 relative z-10">
-              <span className="text-3xl font-black text-slate-800">{totalPublications}</span>
+            <div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{totalPublications}</div>
+              <p className="text-sm text-indigo-600 flex items-center gap-1 font-medium">
+                <Target size={14} /> <span>Objectif annuel dépassé</span>
+              </p>
             </div>
-            <p className="text-xs font-bold text-indigo-500 flex items-center gap-1 mt-2 relative z-10">
-              <Target size={12} /> Objectif annuel dépassé
-            </p>
           </div>
+
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -145,34 +155,40 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {institutions.map(inst => (
                 <Link key={inst.id} href="/dashboard/comparison" className="block group">
-                  <div className={`p-4 rounded-2xl border-2 transition-all duration-300 ${
-                    inst.status === 'Nominal' ? 'border-emerald-100 bg-emerald-50/30 hover:border-emerald-300' :
-                    inst.status === 'Attention' ? 'border-amber-100 bg-amber-50/30 hover:border-amber-300' :
-                    'border-red-100 bg-red-50/30 hover:border-red-300'
-                  }`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black text-white shadow-sm" style={{ backgroundColor: inst.color }}>
-                        {inst.initials}
-                      </div>
-                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1 ${
-                        inst.status === 'Nominal' ? 'bg-emerald-100 text-emerald-700' :
-                        inst.status === 'Attention' ? 'bg-amber-100 text-amber-700' :
-                        'bg-red-100 text-red-700'
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                      {inst.logo ? (
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-sm border border-slate-100 overflow-hidden">
+                          <img src={inst.logo} alt={`Logo ${inst.name}`} className="w-full h-full object-contain p-1" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-slate-700 shadow-sm border border-slate-200" style={{ backgroundColor: inst.color }}>
+                          {inst.initials}
+                        </div>
+                      )}
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
+                        inst.status === 'Nominal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' :
+                        inst.status === 'Attention' ? 'bg-amber-50 text-amber-600 border border-amber-200/50' :
+                        'bg-red-50 text-red-600 border border-red-200/50'
                       }`}>
-                        {inst.status === 'Nominal' ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
+                        {inst.status === 'Nominal' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
                         {inst.status}
                       </span>
                     </div>
-                    <h3 className="text-base font-black text-slate-800 group-hover:text-cyan-600 transition-colors">{inst.name}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 truncate">{inst.type} · {inst.city}</p>
+                    <h3 className="text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors">{inst.name}</h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5 mb-4 truncate">{inst.type} · {inst.city}</p>
                     
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center text-[10px] font-bold">
-                        <span className="text-slate-500 uppercase tracking-widest">Réussite</span>
-                        <span className="text-slate-800">{inst.successRate}%</span>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-500 font-medium">Réussite</span>
+                        <span className="text-slate-700 font-bold">{inst.successRate}%</span>
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: `${inst.successRate}%` }}></div>
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-500 ${
+                          inst.status === 'Nominal' ? 'bg-emerald-500' :
+                          inst.status === 'Attention' ? 'bg-amber-500' :
+                          'bg-red-500'
+                        }`} style={{ width: `${inst.successRate}%` }}></div>
                       </div>
                     </div>
                   </div>
@@ -255,7 +271,7 @@ export default function Dashboard() {
                 <Tooltip 
                   cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '11px', fontWeight: 'bold' }}
-                  formatter={(value: number, name: string) => [`${value}%`, name]}
+                  formatter={(value, name) => [`${Number(value)}%`, String(name)]}
                   labelFormatter={(label) => `Mois: ${label}`}
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingTop: '20px' }} />
