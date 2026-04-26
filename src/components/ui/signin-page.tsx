@@ -56,9 +56,7 @@ interface FormHeaderProps {
 
 const FormHeader = ({ title, subtitle }: FormHeaderProps) => (
   <div className="text-center space-y-2">
-    <div className="bg-primary mx-auto w-16 h-16 rounded-2xl flex items-center justify-center text-primary-foreground font-black text-2xl shadow-xl shadow-primary/20 mb-6">
-      UC
-    </div>
+    <img src="/web-logo.jpg" alt="Logo UCAR" className="mx-auto w-16 h-16 object-contain rounded-2xl shadow-xl shadow-primary/20 mb-6" />
     <h1 className="text-3xl font-bold tracking-tight text-foreground">
       {title}
     </h1>
@@ -411,7 +409,7 @@ const GradientBackground = ({ children }: GradientBackgroundProps) => {
       <div className="relative z-10 flex flex-col p-12 w-full h-full">
         {/* Logo at the top */}
         <div className="bg-white/95 p-4 rounded-3xl shadow-2xl backdrop-blur-sm self-start mb-auto">
-          <img src="/logo.png" alt="Logo UCAR" className="h-16 w-auto object-contain" />
+          <img src="/web-logo.jpg" alt="Logo UCAR" className="h-16 w-auto object-contain rounded-xl" />
         </div>
         
         {/* Hero Content at the bottom */}
@@ -466,16 +464,26 @@ const SignIn = () => {
     setLoginError("");
 
     if (isRegistering) {
-      // Simulate account creation
-      setAuthStatus('pending');
-      setIsRegistering(false);
-      setEmail("");
-      setPassword("");
-      setFullName("");
-      setInstitution("");
-      setJobTitle("");
+      if (role === 'Institution') {
+        // Simulate account creation pending approval for staff
+        setAuthStatus('pending');
+        localStorage.setItem('hasPendingAuthRequest', 'true');
+        localStorage.setItem('pendingAuthName', fullName || 'Nouveau Staff');
+        localStorage.setItem('pendingAuthInst', institution || 'Une institution');
+        
+        setIsRegistering(false);
+        setEmail("");
+        setPassword("");
+        setFullName("");
+        setInstitution("");
+        setJobTitle("");
+      } else {
+        // Presidents and UCAR admins bypass pending status in this demo
+        localStorage.setItem('userRole', role);
+        router.push('/dashboard');
+      }
     } else {
-      if (authStatus === 'pending') {
+      if (role === 'Institution' && authStatus === 'pending') {
         setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Président.");
         return;
       }

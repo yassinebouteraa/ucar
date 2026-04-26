@@ -41,9 +41,7 @@ export default function LandingPage() {
         className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto relative z-20"
       >
         <div className="flex items-center gap-3">
-          <div className="bg-cyan-500 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-cyan-500/20">
-            UC
-          </div>
+          <img src="/web-logo.jpg" alt="Logo UCAR" className="w-10 h-10 object-contain rounded-xl shadow-lg shadow-cyan-500/20" />
           <span className="font-black text-xl tracking-tight">UCAR Pulse</span>
         </div>
         
@@ -280,9 +278,7 @@ export default function LandingPage() {
       <footer className="bg-white border-t border-slate-100 pt-16 pb-8 px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm">
-              UC
-            </div>
+            <img src="/web-logo.jpg" alt="Logo UCAR" className="w-8 h-8 object-contain rounded-lg" />
             <span className="font-black text-lg tracking-tight">UCAR Pulse</span>
           </div>
           <div className="flex gap-8">
