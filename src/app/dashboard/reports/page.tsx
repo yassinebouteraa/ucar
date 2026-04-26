@@ -324,7 +324,7 @@ export default function ReportsPage() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-cyan-500 w-12 h-12 rounded-2xl flex items-center justify-center font-black text-2xl shadow-xl shadow-cyan-500/20">UC</div>
+                  <img src="/web-logo.jpg" alt="Logo UCAR" className="w-12 h-12 object-contain rounded-2xl shadow-xl shadow-cyan-500/20" />
                   <div>
                     <span className="text-xl font-black tracking-tight block">UNIVERSITÉ DE CARTHAGE</span>
                     <span className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.2em]">Pôle Gouvernance & Audit</span>

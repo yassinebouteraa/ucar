@@ -8,10 +8,16 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const notificationsRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -26,12 +32,12 @@ export default function Navbar() {
       className="h-16 bg-[#0F172A] flex items-center px-6 fixed top-0 left-0 right-0 z-50 shadow-md shadow-slate-900/20"
     >
       <div className="flex items-center gap-3">
-        <motion.div
+        <motion.img
           whileHover={{ rotate: 10, scale: 1.05 }}
-          className="bg-cyan-500 rounded-lg w-8 h-8 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-cyan-500/20"
-        >
-          UC
-        </motion.div>
+          src="/web-logo.jpg" 
+          alt="Logo UCAR"
+          className="rounded-lg w-8 h-8 object-contain shadow-md shadow-cyan-500/20"
+        />
         <span className="text-white font-semibold text-sm tracking-wide">UCAR Pulse</span>
       </div>
 
@@ -52,8 +58,13 @@ export default function Navbar() {
           <span>Tunis</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="text-slate-400 hover:text-white transition-colors relative">
+        <div className="flex items-center gap-4 relative" ref={notificationsRef}>
+          <motion.button 
+            whileHover={{ scale: 1.1 }} 
+            whileTap={{ scale: 0.9 }} 
+            onClick={() => setNotificationsOpen(v => !v)}
+            className="text-slate-400 hover:text-white transition-colors relative"
+          >
             <Bell size={18} />
             <motion.span
               animate={{ scale: [1, 1.2, 1] }}
@@ -61,6 +72,70 @@ export default function Navbar() {
               className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#0F172A]"
             ></motion.span>
           </motion.button>
+          
+          <AnimatePresence>
+            {notificationsOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-4 w-80 bg-[#1E293B] border border-slate-700 rounded-xl shadow-xl shadow-slate-900/40 overflow-hidden z-50"
+              >
+                <div className="px-4 py-3 border-b border-slate-700 flex justify-between items-center bg-[#0F172A]/50">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">Notifications</h3>
+                  <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">2 NOUVELLES</span>
+                </div>
+                
+                <div className="max-h-[300px] overflow-y-auto">
+                  {/* Notification 1 */}
+                  <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                        <Bell size={14} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Rapport de SUP'COM généré avec succès.</p>
+                        <p className="text-[10px] text-slate-400">Il y a 10 minutes</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notification 2 */}
+                  <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
+                        <Bell size={14} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Alerte : IHEC Carthage — Chute du taux de rétention de 5% ce trimestre.</p>
+                        <p className="text-[10px] text-slate-400">Il y a 2 heures</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Notification 3 */}
+                  <div className="px-4 py-3 hover:bg-slate-700/30 transition-colors cursor-pointer group opacity-60">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 shrink-0">
+                        <Bell size={14} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Nouveau fichier ingesté par ISSTE.</p>
+                        <p className="text-[10px] text-slate-400">Hier</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-700 p-2 bg-[#0F172A]/50">
+                  <button className="w-full py-2 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-widest transition-colors">
+                    Marquer tout comme lu
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Account dropdown */}
