@@ -342,9 +342,13 @@ export default function ComparisonPage() {
                         </td>
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black" style={{ backgroundColor: inst.color }}>
-                              {inst.initials}
-                            </div>
+                            {inst.logo ? (
+                              <img src={inst.logo} alt={inst.name} className="w-7 h-7 rounded-lg object-contain bg-white border border-slate-100 p-0.5" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black" style={{ backgroundColor: inst.color }}>
+                                {inst.initials}
+                              </div>
+                            )}
                             <span className="text-xs font-black text-slate-800">{inst.name}</span>
                           </div>
                         </td>
@@ -486,9 +490,13 @@ function CustomComparison({
                     {pool.map((inst, i) => (
                       <th key={inst.id} className={`py-4 px-3 bg-slate-50 ${i === pool.length - 1 ? 'rounded-tr-xl' : ''}`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-sm" style={{ backgroundColor: inst.color }}>
-                            {inst.initials}
-                          </div>
+                          {inst.logo ? (
+                            <img src={inst.logo} alt={inst.name} className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-100 shadow-sm p-0.5" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-sm" style={{ backgroundColor: inst.color }}>
+                              {inst.initials}
+                            </div>
+                          )}
                           <div>
                             <p className="text-xs font-black text-slate-800">{inst.name}</p>
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{inst.type}</p>
