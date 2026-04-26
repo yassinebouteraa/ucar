@@ -90,9 +90,9 @@ export default function Dashboard() {
         ]);
 
         let staffData: any[] = [];
-        if (role === 'Directeur UCAR' || role === 'Directeur Institut') {
+        if (role === 'Directeur Institut') {
           let query = supabase.from('users').select('*').eq('status', 'pending').eq('role', 'staff');
-          if (role === 'Directeur Institut' && inst) {
+          if (inst) {
             query = query.eq('institution_id', inst);
           }
           const { data: staff } = await query;

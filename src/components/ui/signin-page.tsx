@@ -622,8 +622,8 @@ const SignIn = () => {
           const isDenied = profile.status === 'rejected';
           setLoginError(
             isDenied
-              ? "Accès refusé : votre demande a été rejetée par le Directeur UCAR."
-              : "Accès en attente : votre compte Staff Institut est en cours de validation par le Directeur UCAR."
+              ? "Accès refusé : votre demande a été rejetée par le Directeur de votre établissement."
+              : "Accès en attente : votre compte Staff Institut est en cours de validation par le Directeur de votre établissement."
           );
           await supabase.auth.signOut();
           return;
