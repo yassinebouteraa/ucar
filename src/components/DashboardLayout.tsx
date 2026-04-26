@@ -1,5 +1,6 @@
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
+import AIAssistantPopup from './AIAssistantPopup'
 
 export default function DashboardLayout({
   children,
@@ -11,10 +12,11 @@ export default function DashboardLayout({
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 ml-56 pt-16 min-h-screen">
+        <main className="flex-1 ml-56 pt-16 min-h-screen relative">
           {children}
         </main>
       </div>
+      <AIAssistantPopup />
     </div>
   )
 }

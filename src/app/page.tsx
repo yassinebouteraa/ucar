@@ -1,189 +1,291 @@
+"use client"
+
 import Link from 'next/link'
-import { ArrowRight, BarChart3, Shield, Zap, Globe, Cpu, Users, ChevronRight, Play } from 'lucide-react'
+import { Shield, Globe, Cpu, Users, LayoutDashboard, FileText } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function LandingPage() {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.2, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: "spring", stiffness: 50, damping: 20 }
+    }
+  };
+
+  const scaleIn = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { type: "spring", stiffness: 40, damping: 20, duration: 1 }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#F0FAFA] text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAFCFC] text-slate-900 overflow-x-hidden font-sans">
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto relative z-10">
+      <motion.nav 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto relative z-20"
+      >
         <div className="flex items-center gap-3">
           <div className="bg-cyan-500 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-cyan-500/20">
             UC
           </div>
-          <span className="font-black text-xl tracking-tight">UCAR <span className="text-cyan-500">Pulse</span></span>
+          <span className="font-black text-xl tracking-tight">UCAR Pulse</span>
         </div>
-        <div className="hidden md:flex items-center gap-10">
-          {['Plateforme', 'Institutions', 'IA EchoGarden', 'Rapports'].map((item) => (
-            <Link key={item} href="#" className="text-sm font-bold text-slate-500 hover:text-cyan-500 transition-colors uppercase tracking-widest">{item}</Link>
+        
+        <div className="hidden md:flex items-center gap-8">
+          {['Accueil', 'Fonctionnalités', 'KPIs', 'Rapports', 'Administration'].map((item) => (
+            <Link key={item} href="#" className="text-sm font-semibold text-slate-600 hover:text-cyan-500 transition-colors">
+              {item}
+            </Link>
           ))}
         </div>
-        <Link 
-          href="/login" 
-          className="bg-white border border-slate-200 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm active:scale-95"
-        >
-          Connexion
-        </Link>
-      </nav>
+
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/login" 
+            className="hidden md:block text-sm font-semibold text-slate-600 hover:text-cyan-500 transition-colors"
+          >
+            Se connecter
+          </Link>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Link 
+              href="/login" 
+              className="bg-cyan-500 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-cyan-600 transition-all shadow-md shadow-cyan-500/20"
+            >
+              S'inscrire
+            </Link>
+          </motion.div>
+        </div>
+      </motion.nav>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 px-8 overflow-hidden">
-        {/* Background Decorative Elements */}
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-cyan-200/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-100/30 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4"></div>
+      <section className="relative pt-12 pb-24 px-8 max-w-7xl mx-auto">
+        {/* Soft top-left gradient background matching the reference vibe */}
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2 }}
+          className="absolute top-0 left-0 w-[600px] h-[600px] bg-cyan-100/40 rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 -z-10"
+        ></motion.div>
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 0.5 }}
+          className="absolute top-40 left-20 w-[400px] h-[400px] bg-amber-50/50 rounded-full blur-[80px] -z-10"
+        ></motion.div>
 
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-8 max-w-2xl animate-in fade-in slide-in-from-left-8 duration-1000">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm">
-                <span className="flex h-2 w-2 rounded-full bg-cyan-500"></span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">HACK4UCAR 2025 · ACM ENSTAB</span>
-              </div>
-              <h1 className="text-7xl font-black text-slate-900 leading-[1.1] tracking-tight">
-                Le système d'exploitation de l'<span className="text-cyan-500">enseignement supérieur</span> tunisien.
-              </h1>
-              <p className="text-xl text-slate-500 font-medium leading-relaxed">
-                Pas un dashboard. Pas un chatbot. UCAR Pulse remplace les chaînes Excel et les emails par une plateforme multi-tenant : ingestion tout format, IA sans hallucination, rapports en français en 30 secondes.
-              </p>
-              <div className="flex flex-wrap gap-4 pt-4">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left Side: Text Content */}
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8 relative z-10"
+          >
+            <motion.h1 
+              variants={itemVariants}
+              className="text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1] tracking-tight"
+            >
+              Allez au-delà des limites de la gestion universitaire.
+            </motion.h1>
+            <motion.p 
+              variants={itemVariants}
+              className="text-lg text-slate-600 font-medium leading-relaxed max-w-lg"
+            >
+              Centralisez, analysez et pilotez les indicateurs clés de performance de l'Université de Carthage avec une plateforme de nouvelle génération.
+            </motion.p>
+            
+            <motion.div variants={itemVariants} className="flex items-center gap-8 pt-2">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
                   href="/login"
-                  className="bg-cyan-500 text-white px-8 py-4 rounded-2xl text-base font-black uppercase tracking-widest hover:bg-cyan-600 shadow-2xl shadow-cyan-500/30 transition-all flex items-center gap-3 group active:scale-[0.98]"
+                  className="bg-cyan-600 text-white px-8 py-4 rounded-full text-base font-bold hover:bg-cyan-700 shadow-xl shadow-cyan-600/20 transition-colors"
                 >
-                  Accéder à la plateforme
-                  <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                  Commencer
                 </Link>
-                <button className="bg-white border border-slate-200 text-slate-700 px-8 py-4 rounded-2xl text-base font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-3 active:scale-[0.98]">
-                  <Play size={18} className="fill-slate-700" />
-                  Regarder la démo
-                </button>
-              </div>
-              <div className="flex items-center gap-6 pt-8 border-t border-slate-100">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center font-bold text-[10px] shadow-sm">
-                      U{i}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm font-bold text-slate-400">Conçu pour les <span className="text-slate-900 font-black">30+ établissements</span> de l'Université de Carthage</p>
-              </div>
-            </div>
+              </motion.div>
+              <Link 
+                href="#" 
+                className="text-slate-700 font-bold underline decoration-2 underline-offset-4 decoration-slate-300 hover:decoration-cyan-500 transition-all"
+              >
+                Devenir administrateur
+              </Link>
+            </motion.div>
+          </motion.div>
 
-            <div className="relative animate-in fade-in slide-in-from-right-12 duration-1000 delay-200">
-              {/* Dashboard Mockup Component */}
-              <div className="relative z-10 bg-white rounded-[32px] border border-slate-100 shadow-2xl shadow-cyan-500/10 p-4 transform rotate-2 hover:rotate-0 transition-transform duration-700">
-                <div className="bg-[#0F172A] rounded-[24px] h-[400px] overflow-hidden flex flex-col">
-                   <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-                     <div className="flex gap-2">
-                       <div className="w-2 h-2 rounded-full bg-red-400"></div>
-                       <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-                       <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                     </div>
-                     <div className="w-32 h-2 bg-slate-800 rounded-full"></div>
-                     <div className="w-6 h-6 rounded-full bg-cyan-500"></div>
-                   </div>
-                   <div className="flex-1 p-6">
-                     <div className="grid grid-cols-2 gap-4 mb-6">
-                       <div className="h-24 bg-slate-800/50 rounded-2xl p-4">
-                         <div className="w-12 h-2 bg-cyan-500 rounded-full mb-3"></div>
-                         <div className="w-20 h-4 bg-white/20 rounded-full"></div>
-                       </div>
-                       <div className="h-24 bg-slate-800/50 rounded-2xl p-4">
-                         <div className="w-12 h-2 bg-emerald-500 rounded-full mb-3"></div>
-                         <div className="w-20 h-4 bg-white/20 rounded-full"></div>
-                       </div>
-                     </div>
-                     <div className="h-32 bg-slate-800/50 rounded-2xl p-4 flex flex-col justify-end">
-                       <div className="flex items-end gap-1 h-full">
-                         {[40, 70, 45, 90, 65, 80].map((h, i) => (
-                           <div key={i} className="flex-1 bg-cyan-500/40 rounded-t-sm" style={{ height: `${h}%` }}></div>
-                         ))}
-                       </div>
-                     </div>
-                   </div>
-                </div>
-              </div>
+          {/* Right Side: Image and Shapes */}
+          <div className="relative flex justify-center items-center h-[600px] lg:h-[700px] w-full">
+            {/* The main circular background behind the person */}
+            <motion.div 
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 30, duration: 1.5 }}
+              className="absolute w-[450px] h-[450px] rounded-full bg-cyan-500 right-0 lg:right-10 top-1/2 -translate-y-1/2 z-0"
+            ></motion.div>
+            
+            {/* Secondary shapes */}
+            <motion.div 
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", delay: 0.3, duration: 1.5 }}
+              className="absolute w-32 h-32 rounded-full bg-amber-400 top-20 right-0 z-0"
+            ></motion.div>
+            <motion.div 
+              initial={{ scale: 0, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              transition={{ type: "spring", delay: 0.5, duration: 1.5 }}
+              className="absolute w-24 h-24 rounded-full bg-blue-600 bottom-24 right-12 z-20"
+            ></motion.div>
+            
+            {/* Sparkle/Star accent */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1, rotate: 180 }}
+              transition={{ delay: 1, duration: 1.5 }}
+              className="absolute top-1/3 left-12 text-cyan-500 z-10"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v18M3 12h18"/>
+              </svg>
+            </motion.div>
 
-              {/* Floating KPI Cards */}
-              <div className="absolute -top-10 -left-10 z-20 bg-white p-6 rounded-3xl shadow-xl border border-slate-100 animate-bounce duration-[3000ms]">
-                <div className="flex items-center gap-4">
-                  <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600"><BarChart3 size={24} /></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Insertion Pro ESPRIT</p>
-                    <p className="text-xl font-black text-slate-800">84%</p>
-                  </div>
-                </div>
-              </div>
+            {/* Main Portrait Image */}
+            <motion.img 
+              initial={{ opacity: 0, y: 100 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 40, damping: 20, delay: 0.2 }}
+              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" 
+              alt="Professional Manager" 
+              className="relative z-10 w-[380px] h-[550px] object-cover rounded-full border-[12px] border-[#FAFCFC] shadow-2xl"
+            />
 
-              <div className="absolute -bottom-10 -right-10 z-20 bg-white p-6 rounded-3xl shadow-xl border border-slate-100 animate-pulse duration-[4000ms]">
-                <div className="flex items-center gap-4">
-                  <div className="bg-cyan-100 p-3 rounded-2xl text-cyan-600"><Zap size={24} /></div>
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rapport IA en français</p>
-                    <p className="text-xl font-black text-slate-800">~30 sec</p>
-                  </div>
-                </div>
+            {/* Floating Badge */}
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0, y: [0, -15, 0] }}
+              transition={{ 
+                opacity: { delay: 0.8, duration: 0.5 },
+                x: { type: "spring", delay: 0.8 },
+                y: { repeat: Infinity, duration: 4, ease: "easeInOut", delay: 1 } 
+              }}
+              className="absolute bottom-32 -left-4 lg:left-0 bg-white px-6 py-4 rounded-2xl shadow-xl z-30 flex flex-col gap-2"
+            >
+              <span className="text-sm font-bold text-slate-800">Institutions Connectées</span>
+              <div className="flex -space-x-3 mt-1">
+                <img src="https://i.pravatar.cc/100?img=1" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 1" />
+                <img src="https://i.pravatar.cc/100?img=2" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 2" />
+                <img src="https://i.pravatar.cc/100?img=3" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 3" />
+                <div className="w-10 h-10 rounded-full border-2 border-white bg-cyan-500 flex items-center justify-center text-white text-[11px] font-bold">+30</div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-32 px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-20 space-y-4">
-          <h2 className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Ce qui nous distingue</h2>
-          <h3 className="text-4xl font-black text-slate-900 tracking-tight">De la pile de PDF à la décision stratégique</h3>
-        </div>
+      {/* Features / Categories Section */}
+      <section className="py-24 px-8 max-w-7xl mx-auto">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={containerVariants}
+          className="text-center mb-16 space-y-3"
+        >
+          <motion.h2 variants={itemVariants} className="text-sm font-bold text-cyan-600 uppercase tracking-widest">
+            FONCTIONNALITÉS PRINCIPALES
+          </motion.h2>
+          <motion.h3 variants={itemVariants} className="text-4xl font-extrabold text-slate-900 tracking-tight">
+            Nos modules phares
+          </motion.h3>
+        </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {[
             {
               icon: Globe,
               title: 'Ingestion tout format',
-              desc: 'PDF scanné, photo de tableau imprimé, Excel, Word — Apache Tika + OCR extraient les KPIs automatiquement.',
-              color: 'text-blue-500', bg: 'bg-blue-50'
+              desc: 'Gère vos PDF scannés, Excel, et tableaux.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
             },
             {
               icon: Cpu,
-              title: 'IA sans hallucination',
-              desc: 'Pipeline EchoGarden Weaver+Verifier — chaque réponse renvoie citations et un verdict pass / revise / abstain.',
-              color: 'text-cyan-500', bg: 'bg-cyan-50'
+              title: 'IA Sans Hallucination',
+              desc: 'Pipeline vérifié et citations des sources.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
             },
             {
               icon: Shield,
-              title: 'Rôles à la tunisienne',
-              desc: 'Président, Trésorier, Chef Personnel, Scolarité, Recherche — accès calqué sur la gouvernance réelle des universités.',
-              color: 'text-emerald-500', bg: 'bg-emerald-50'
+              title: 'Rôles & Gouvernance',
+              desc: 'Accès sécurisé selon votre institution.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
+            },
+            {
+              icon: LayoutDashboard,
+              title: 'Tableaux de bord',
+              desc: 'Visualisation en temps réel des KPIs.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
+            },
+            {
+              icon: FileText,
+              title: 'Rapports automatisés',
+              desc: 'Génération en français en 30 secondes.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
+            },
+            {
+              icon: Users,
+              title: 'Gestion des ressources',
+              desc: 'Suivi RH, finances et scolarité simplifié.',
+              color: 'text-indigo-600', bg: 'bg-indigo-600'
             }
           ].map((feature, i) => (
-            <div key={i} className="bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-xl hover:border-cyan-100 transition-all group">
-              <div className={`w-16 h-16 rounded-2xl ${feature.bg} ${feature.color} flex items-center justify-center mb-8 group-hover:scale-110 transition-transform`}>
-                <feature.icon size={32} />
+            <motion.div 
+              variants={scaleIn}
+              whileHover={{ y: -5, scale: 1.02 }}
+              key={i} 
+              className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-cyan-500/10 transition-all flex items-center gap-5 cursor-pointer group"
+            >
+              <div className={`w-14 h-14 rounded-2xl ${feature.bg} text-white flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform`}>
+                <feature.icon size={24} />
               </div>
-              <h4 className="text-xl font-black text-slate-900 mb-4">{feature.title}</h4>
-              <p className="text-slate-500 font-medium leading-relaxed mb-6">{feature.desc}</p>
-              <button className="flex items-center gap-2 text-xs font-black text-cyan-500 uppercase tracking-widest hover:gap-3 transition-all">
-                En savoir plus <ChevronRight size={14} />
-              </button>
-            </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900">{feature.title}</h4>
+                <p className="text-sm text-slate-500 mt-1 leading-snug">{feature.desc}</p>
+              </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-100 pt-20 pb-10 px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+      <footer className="bg-white border-t border-slate-100 pt-16 pb-8 px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="bg-slate-900 w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm">
               UC
             </div>
-            <span className="font-black text-lg tracking-tight">UCAR <span className="text-cyan-500">Pulse</span></span>
+            <span className="font-black text-lg tracking-tight">UCAR Pulse</span>
           </div>
           <div className="flex gap-8">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">HACK4UCAR 2025 · Université de Carthage · ACM ENSTAB</span>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-900 transition-colors">Mentions Légales</span>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:text-slate-900 transition-colors">Support</span>
+            <span className="text-xs font-bold text-slate-400">HACK4UCAR 2025 · Université de Carthage</span>
+            <Link href="#" className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors">Mentions Légales</Link>
+            <Link href="#" className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors">Support</Link>
           </div>
         </div>
       </footer>

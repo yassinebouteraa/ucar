@@ -22,7 +22,6 @@ const navItems = [
   { label: 'Tableau de Bord', href: '/dashboard', icon: Home },
   { label: 'Institutions', href: '/dashboard/institutions', icon: Building2 },
   { label: 'Comparer', href: '/dashboard/comparison', icon: Scale },
-  { label: 'Assistant EchoGarden', href: '/dashboard/ai-assistant', icon: Bot },
   { label: 'Rapports', href: '/dashboard/reports', icon: BarChart3 },
   { label: 'Ingestion', href: '/dashboard/data-integration', icon: Upload },
 ]
