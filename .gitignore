@@ -44,3 +44,17 @@ next-env.d.ts
 CLAUDE.md
 AGENTS.md
 *.pdf
+
+# IDE / Editor directories
+.vscode/
+.idea/
+.claude/
+.cursor/
+
+# OS generated files
+Thumbs.db
+
+# Large media files (optional, uncomment to ignore large video/gif uploads)
+# *.mp4
+# *.gif
+# *.mov
