@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic
+httpx
+python-multipart
+
+# Phase 4 — real multimodal ingestion
+Pillow
+faster-whisper
+sentence-transformers
+open_clip_torch
+transformers
+psycopg[binary]
+supabase
+google-genai

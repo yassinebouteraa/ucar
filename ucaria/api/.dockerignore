@@ -1,0 +1,11 @@
+__pycache__
+**/__pycache__
+*.pyc
+.git
+.env
+data/
+node_modules/
+host_watch/
+*.egg-info
+.mypy_cache
+.pytest_cache
