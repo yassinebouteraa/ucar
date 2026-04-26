@@ -432,7 +432,7 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Certification Pipeline</span>
-                    <span className="text-xs font-bold text-slate-700 uppercase">Verdict EchoGarden : pass · citations vérifiées</span>
+                    <span className="text-xs font-bold text-slate-700 uppercase">Verdict UCARIA : pass · citations vérifiées</span>
                   </div>
                 </div>
                 <div className="text-right">

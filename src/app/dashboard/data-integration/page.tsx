@@ -128,7 +128,7 @@ export default function DataIntegrationPage() {
           </div>
         </div>
         <p className="text-sm text-slate-500 font-medium mb-8 max-w-3xl">
-          Glissez-déposez vos fichiers — PDF scanné, photo de tableau imprimé, Excel, Word. Apache Tika et l'OCR extraient le texte ; Groq extrait les KPIs ; EchoGarden vectorise et vérifie.
+          Glissez-déposez vos fichiers — PDF scanné, photo de tableau imprimé, Excel, Word. Apache Tika et l'OCR extraient le texte ; Groq extrait les KPIs ; UCARIA vectorise et vérifie.
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
