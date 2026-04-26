@@ -66,7 +66,7 @@ export default function AIAssistantPopup() {
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
       {/* Chat Window */}
       {isOpen && (
-        <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-[480px] h-[700px] flex flex-col mb-4 overflow-hidden animate-in slide-in-from-bottom-5">
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-[380px] h-[550px] max-h-[80vh] flex flex-col mb-4 overflow-hidden animate-in slide-in-from-bottom-5">
           {/* Header */}
           <div className="px-4 py-3 border-b border-slate-50 flex items-center justify-between bg-cyan-500 text-white">
             <div className="flex items-center gap-3">

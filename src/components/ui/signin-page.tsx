@@ -551,51 +551,40 @@ const SignIn = () => {
                 />
               )}
               {isRegistering && (
+                <InputField
+                  id="jobTitle"
+                  type="text"
+                  label="Poste / Fonction"
+                  placeholder="ex: Trésorier, Directeur..."
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  icon={Briefcase}
+                  required
+                />
+              )}
+              {isRegistering && (role === 'Institution' || role === 'Président') && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Poste / Fonction</label>
+                  <label className="text-sm font-medium text-foreground">Établissement</label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <select
-                      value={jobTitle}
-                      onChange={(e) => setJobTitle(e.target.value)}
+                      value={institution}
+                      onChange={(e) => setInstitution(e.target.value)}
                       className="w-full h-11 pl-10 pr-10 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-300"
                       required
                     >
-                      <option value="" disabled>Sélectionnez votre fonction</option>
-                      {role === 'Institution' && (
-                        <>
-                          <option value="Trésorier">Trésorier</option>
-                          <option value="Chef Personnel">Chef du Personnel</option>
-                          <option value="Scolarité">Responsable Scolarité</option>
-                          <option value="Recherche">Directeur de Recherche</option>
-                          <option value="Autre">Autre Staff</option>
-                        </>
-                      )}
-                      {role === 'UCAR' && (
-                        <>
-                          <option value="Présidente">Présidente UCAR</option>
-                          <option value="Vice-Président">Vice-Président</option>
-                          <option value="Secrétaire Général">Secrétaire Général</option>
-                        </>
-                      )}
-                      {role === 'Président' && (
-                        <option value="Président Institution">Président d'institution</option>
-                      )}
+                      <option value="" disabled>Sélectionnez votre établissement</option>
+                      <option value="ENSTAB">ENSTAB</option>
+                      <option value="ENICarthage">ENICarthage</option>
+                      <option value="SUP'COM">SUP'COM</option>
+                      <option value="IHEC Carthage">IHEC Carthage</option>
+                      <option value="ISG Tunis">ISG Tunis</option>
+                      <option value="FSB">FSB</option>
+                      <option value="INAT">INAT</option>
+                      <option value="Autre">Autre Établissement UCAR</option>
                     </select>
                   </div>
                 </div>
-              )}
-              {isRegistering && role === 'Institution' && (
-                <InputField
-                  id="institution"
-                  type="text"
-                  label="Nom de l'institution"
-                  placeholder="ex: ENSTAB"
-                  value={institution}
-                  onChange={(e) => setInstitution(e.target.value)}
-                  icon={GraduationCap}
-                  required
-                />
               )}
               <InputField
                 id="email"
