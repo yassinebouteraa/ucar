@@ -20,7 +20,7 @@ type Message = {
 const initialMessages: Message[] = [
   {
     role: 'ai',
-    text: "Bonjour ! Je suis l'Assistant EchoGarden. Comment puis-je vous aider avec vos données UCAR aujourd'hui ?",
+    text: "Bonjour ! Je suis UCARIA. Comment puis-je vous aider avec vos données UCAR aujourd'hui ?",
     time: '10:30',
   }
 ]
@@ -51,7 +51,7 @@ export default function AIAssistantPopup() {
     setTimeout(() => {
       const aiMsg: Message = {
         role: 'ai',
-        text: "Réponse ancrée dans les KPIs ingérés. EchoGarden a retrouvé les passages pertinents et généré une synthèse vérifiée.",
+        text: "Réponse ancrée dans les KPIs ingérés. UCARIA a retrouvé les passages pertinents et généré une synthèse vérifiée.",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verdict: 'pass',
         citations: [
@@ -74,7 +74,7 @@ export default function AIAssistantPopup() {
                 <Bot size={18} />
               </div>
               <div>
-                <h2 className="text-sm font-black">Assistant EchoGarden</h2>
+                <h2 className="text-sm font-black">UCARIA</h2>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
                   <span className="text-[9px] font-bold text-cyan-100 uppercase tracking-widest">En ligne</span>

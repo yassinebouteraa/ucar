@@ -11,14 +11,14 @@ export default function LandingPage() {
       opacity: 1,
       transition: { staggerChildren: 0.2, delayChildren: 0.1 }
     }
-  };
+  } as const;
 
   const itemVariants = {
     hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 
       y: 0, 
-      transition: { type: "spring", stiffness: 50, damping: 20 }
+      transition: { type: "spring" as const, stiffness: 50, damping: 20 }
     }
   };
 
@@ -27,7 +27,7 @@ export default function LandingPage() {
     visible: { 
       opacity: 1, 
       scale: 1,
-      transition: { type: "spring", stiffness: 40, damping: 20, duration: 1 }
+      transition: { type: "spring" as const, stiffness: 40, damping: 20, duration: 1 }
     }
   };
 
@@ -160,14 +160,17 @@ export default function LandingPage() {
               </svg>
             </motion.div>
 
-            {/* Main Portrait Image */}
-            <motion.img 
+            {/* Main Hero Video */}
+            <motion.video
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 40, damping: 20, delay: 0.2 }}
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" 
-              alt="Professional Manager" 
-              className="relative z-10 w-[380px] h-[550px] object-cover rounded-full border-[12px] border-[#FAFCFC] shadow-2xl"
+              src="/page vid.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="relative z-10 w-[480px] h-auto object-contain rounded-[60px]"
             />
 
             {/* Floating Badge */}

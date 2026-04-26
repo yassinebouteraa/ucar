@@ -9,7 +9,6 @@ import {
   Scale,
   BarChart3,
   Upload,
-  LogOut,
 } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -59,7 +58,7 @@ export default function Sidebar() {
 
   const itemVariants = {
     hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 70 } }
+    show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 70 } }
   }
 
   return (
@@ -131,15 +130,6 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-        <Link 
-          href="/login"
-          className="flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full font-semibold group"
-        >
-          <motion.div whileHover={{ x: -3 }} className="text-slate-400 group-hover:text-red-500">
-            <LogOut size={16} />
-          </motion.div>
-          <span className="text-sm">Déconnexion</span>
-        </Link>
       </motion.div>
     </aside>
   )

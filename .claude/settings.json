@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(python -c ' *)",
-      "Bash(echo \"EXIT=$?\")"
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(git ls-files *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "PowerShell(choco install gifsicle -y)"
     ]
   }
 }

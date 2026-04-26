@@ -354,6 +354,13 @@ const IconBadge = ({ icon, size = "md", variant = "light" }: IconBadgeProps) => 
   );
 };
 
+// Hero Section Component
+interface HeroSectionProps {
+  title: string;
+  description: string;
+  showProgress?: boolean;
+}
+
 const HeroSection = ({ title, description, showProgress = true }: HeroSectionProps) => (
   <div className="space-y-6">
     <div className="inline-flex rounded-full px-4 py-1.5 bg-cyan-500/20 text-cyan-100 border border-cyan-500/30 backdrop-blur-md text-[10px] font-black tracking-widest uppercase">

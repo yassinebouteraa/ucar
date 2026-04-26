@@ -85,7 +85,7 @@ export default function AIAssistantPage() {
     setTimeout(() => {
       const aiMsg: Message = {
         role: 'ai',
-        text: "Réponse ancrée dans les KPIs ingérés. EchoGarden a retrouvé les passages pertinents et généré une synthèse vérifiée.",
+        text: "Réponse ancrée dans les KPIs ingérés. UCARIA a retrouvé les passages pertinents et généré une synthèse vérifiée.",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verdict: 'pass',
         citations: [
@@ -108,7 +108,7 @@ export default function AIAssistantPage() {
                 <Bot size={20} />
               </div>
               <div>
-                <h1 className="text-base font-black text-slate-800">Assistant EchoGarden</h1>
+                <h1 className="text-base font-black text-slate-800">UCARIA</h1>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">RAG · Weaver + Verifier</span>
@@ -234,7 +234,7 @@ export default function AIAssistantPage() {
 
           <div className="mt-12 p-6 bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl text-white shadow-xl shadow-cyan-500/20">
             <Sparkles size={24} className="mb-4 opacity-50" />
-            <h3 className="text-sm font-black mb-2 leading-tight">Pipeline EchoGarden</h3>
+            <h3 className="text-sm font-black mb-2 leading-tight">Pipeline UCARIA</h3>
             <p className="text-[10px] text-cyan-100 font-medium leading-relaxed mb-4">RAG vectoriel (Qdrant) + Weaver pour la synthèse + Verifier pour le verdict pass / revise / abstain. Chaque réponse est ancrée et citée.</p>
             <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors">
               Comment ça marche <ChevronRight size={12} />
