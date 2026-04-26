@@ -1,6 +1,7 @@
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import AIAssistantPopup from './AIAssistantPopup'
+import PageTransition from './PageTransition'
 
 export default function DashboardLayout({
   children,
@@ -12,8 +13,10 @@ export default function DashboardLayout({
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 ml-56 pt-16 min-h-screen relative">
-          {children}
+        <main className="flex-1 ml-56 pt-16 min-h-screen relative overflow-x-hidden">
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
       <AIAssistantPopup />

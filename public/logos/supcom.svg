@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <!-- White background -->
+  <rect width="400" height="200" fill="white"/>
+
+  <!-- SUP' in dark blue -->
+  <text x="20" y="130" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="100" fill="#1B3A6B" letter-spacing="-2">SUP</text>
+
+  <!-- Apostrophe/accent mark in dark/black -->
+  <text x="248" y="55" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="40" fill="#1a1a1a">'</text>
+
+  <!-- COM in red -->
+  <text x="262" y="130" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="100" fill="#CC1111" letter-spacing="-2">COM</text>
+
+  <!-- Subtitle -->
+  <text x="200" y="165" font-family="Arial, sans-serif" font-weight="400" font-size="18" fill="#333333" text-anchor="middle" letter-spacing="0.5">Higher School of Communication of Tunis</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64">
+  <!-- Left icon box -->
+  <rect x="0" y="2" width="58" height="58" rx="7" fill="#5c6370"/>
+
+  <!-- White stylized tech/info icon inside the box -->
+  <!-- Outer document shape -->
+  <rect x="14" y="13" width="30" height="36" rx="3" fill="none" stroke="white" stroke-width="2.5"/>
+  <!-- Corner fold -->
+  <polyline points="34,13 44,13 44,23" fill="none" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+  <line x1="34" y1="13" x2="44" y2="23" stroke="white" stroke-width="2"/>
+  <!-- Content lines inside document -->
+  <line x1="19" y1="29" x2="37" y2="29" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="19" y1="34" x2="37" y2="34" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <line x1="19" y1="39" x2="30" y2="39" stroke="white" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- ISTIC text -->
+  <text
+    x="68"
+    y="46"
+    font-family="Arial Black, Arial, sans-serif"
+    font-weight="900"
+    font-size="32"
+    fill="#1a2d5a"
+    letter-spacing="1"
+  >ISTIC</text>
+</svg>

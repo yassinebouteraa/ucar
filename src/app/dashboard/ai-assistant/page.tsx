@@ -4,11 +4,18 @@ import DashboardLayout from '@/components/DashboardLayout'
 import { Bot, Send, User, Sparkles, MessageSquare, Zap, BarChart3, FileText, ChevronRight } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
-const suggestions = [
+const ucarSuggestions = [
   "Pourquoi le taux d'abandon à l'INSAT augmente chaque semestre ?",
   "Quelle institution a le meilleur taux d'insertion professionnelle ?",
   "Quel est le taux d'exécution budgétaire de l'ENIT ce trimestre ?",
   "Quelles institutions n'ont pas soumis leurs données ce mois-ci ?",
+]
+
+const instSuggestions = [
+  "Pourquoi notre taux d'abandon augmente-t-il ce semestre ?",
+  "Comment se compare notre taux de réussite à la moyenne UCAR ?",
+  "Quel est l'état de notre exécution budgétaire ?",
+  "Quelles données manquent pour notre rapport mensuel ?",
 ]
 
 type Message = {
@@ -48,13 +55,25 @@ export default function AIAssistantPage() {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const [userRole, setUserRole] = useState('UCAR')
+  const [isClient, setIsClient] = useState(false)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   useEffect(() => {
+    setUserRole(localStorage.getItem('userRole') || 'UCAR')
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  if (!isClient) return null;
+
+  const currentSuggestions = userRole === 'UCAR' ? ucarSuggestions : instSuggestions
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -197,7 +216,7 @@ export default function AIAssistantPage() {
         <div className="w-80 bg-white p-8 overflow-y-auto">
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Suggestions</h2>
           <div className="space-y-3">
-            {suggestions.map((s, i) => (
+            {currentSuggestions.map((s, i) => (
               <button 
                 key={i}
                 onClick={() => setInput(s)}

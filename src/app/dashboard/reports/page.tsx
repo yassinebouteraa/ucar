@@ -18,7 +18,7 @@ import {
   ArrowRight,
   BarChart3
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const reportHistory = [
   { id: '1', title: 'Rapport Mensuel Mars 2026', date: '29 Mar 2026', size: '1.4 MB', type: 'Mensuel' },
@@ -33,7 +33,14 @@ export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Ce mois (Avril 2026)')
   const [selectedInstitution, setSelectedInstitution] = useState('Université de Carthage (Global)')
   const [urgentRequestStatus, setUrgentRequestStatus] = useState<'none' | 'pending' | 'success'>('none')
-  const [userRole, setUserRole] = useState<'admin' | 'institute'>('admin') // Par défaut admin pour le dev
+  const [userRole, setUserRole] = useState<'admin' | 'institute'>('admin')
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    const role = localStorage.getItem('userRole')
+    setUserRole(role === 'UCAR' ? 'admin' : 'institute')
+    setIsClient(true)
+  }, [])
 
   // TODO: Remplacer ceci par le fetch réel de Supabase lors de l'intégration
   /*
@@ -51,6 +58,8 @@ export default function ReportsPage() {
     fetchUserRole()
   }, [])
   */
+
+  if (!isClient) return null;
 
   const isFutureDate = selectedPeriod === 'Prévisions Trimestre Prochain'
   const selectedInst = institutions.find(i => i.name === selectedInstitution)
