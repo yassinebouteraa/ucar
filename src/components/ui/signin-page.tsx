@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, LucideIcon, Shield, GraduationCap, UserCircle2, Info, ArrowRight, Briefcase } from "lucide-react";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { supabase } from "@/lib/supabase";
 
 // Google Icon Component
 interface GoogleIconProps {
@@ -441,7 +442,15 @@ const FormFooter = ({ text, linkText, linkHref }: FormFooterProps) => (
 // MAIN SIGNIN COMPONENT
 // ============================================================================
 
-type Role = 'Staff' | 'Directeur de l\'université' | 'Directeur';
+type Role = 'Personnel administratif' | 'Directeur d\'Établissement' | 'Président UCAR';
+
+const ROLE_MAPPING = {
+  'Président UCAR': 'ucar_president',
+  'Directeur d\'Établissement': 'inst_president',
+  'Personnel administratif': 'staff'
+} as const;
+
+const getInternalRole = (displayRole: string) => ROLE_MAPPING[displayRole as keyof typeof ROLE_MAPPING] || displayRole;
 
 const STAFF_FUNCTIONS = [
   { value: 'academic',        label: 'Responsable Scolarité',              domain: 'Académique' },
@@ -458,56 +467,130 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<Role>('Personnel administratif');
   const [rememberMe, setRememberMe] = useState(false);
-  const [role, setRole] = useState<Role>('Staff');
   const router = useRouter();
   const searchParams = useSearchParams();
-  
   const [isRegistering, setIsRegistering] = useState(searchParams?.get("register") === "true");
-  const [authStatus, setAuthStatus] = useState<'idle' | 'pending'>('idle');
   const [loginError, setLoginError] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [authStatus, setAuthStatus] = useState<'idle' | 'pending' | 'approved'>('idle');
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [loadingInstitutions, setLoadingInstitutions] = useState(true);
+
+  // Hardcoded institutions list — used as primary source until RLS policy is added
+  // to the Supabase 'institutions' table. Once the policy is applied, this will
+  // be replaced by the DB fetch automatically.
+  const FALLBACK_INSTITUTIONS = [
+    { id: 'inst-insat-0000-0001', name: 'INSAT' },
+    { id: 'inst-supcom-0000-0001', name: "SUP'COM" },
+    { id: 'inst-ihec-0000-0001', name: 'IHEC' },
+    { id: 'inst-enstab-0000-0001', name: 'ENSTAB' },
+    { id: 'inst-isste-0000-0001', name: 'ISSTE' },
+  ];
+
+  useEffect(() => {
+    const fetchInstitutions = async () => {
+      setLoadingInstitutions(true);
+      try {
+        const { data, error: selectError } = await supabase.from('institutions').select('id, name');
+        
+        if (selectError || !data || data.length === 0) {
+          // Use console.warn instead of console.error to avoid Next.js error overlay
+          console.warn("[institutions] DB fetch failed or empty, using fallback list.", selectError?.message);
+          setInstitutions(FALLBACK_INSTITUTIONS);
+        } else {
+          setInstitutions(data);
+        }
+      } catch {
+        // Silent fallback — RLS policy not yet configured
+        console.warn("[institutions] Network error, using fallback list.");
+        setInstitutions(FALLBACK_INSTITUTIONS);
+      } finally {
+        setLoadingInstitutions(false);
+      }
+    };
+    fetchInstitutions();
+  }, []);
+
   const [institution, setInstitution] = useState("");
   const [jobTitle, setJobTitle] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+    setAuthStatus('idle');
 
-    if (isRegistering) {
-      if (role === 'Directeur') {
-        // Directeur (UCAR president) bypasses pending status
-        localStorage.setItem('userRole', role);
-        router.push('/dashboard');
-      } else {
-        // Staff and Directeur de l'université need approval
+    try {
+      if (isRegistering) {
+        // --- REGISTRATION FLOW ---
+        const trimmedEmail = email.trim();
+        const { data: authData, error: authError } = await supabase.auth.signUp({ email: trimmedEmail, password });
+        if (authError) throw authError;
+        if (!authData.user) return;
+
+        const internalRole = getInternalRole(role);
+        const isActive = internalRole === 'ucar_president';
+        
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: authData.user.id,
+            full_name: fullName,
+            role: internalRole,
+            email: trimmedEmail,
+            institution_id: internalRole === 'ucar_president' ? null : (institution || null),
+            job_title: internalRole === 'staff' ? jobTitle : null,
+            status: isActive ? 'active' : 'pending'
+          });
+
+        if (profileError) throw profileError;
+
+        if (isActive) {
+          localStorage.setItem('userRole', role);
+          router.push('/dashboard');
+          return;
+        }
+
         setAuthStatus('pending');
         localStorage.setItem('hasPendingAuthRequest', 'true');
-        localStorage.setItem('pendingAuthName', fullName || 'Nouveau membre');
-        localStorage.setItem('pendingAuthInst', institution || 'Une institution');
-        localStorage.setItem('pendingAuthRole', role);
-        localStorage.setItem('pendingAuthFunction', jobTitle || '');
-        
         setIsRegistering(false);
         setEmail("");
         setPassword("");
-        setFullName("");
-        setInstitution("");
-        setJobTitle("");
+      } else {
+        // --- SIGN IN FLOW ---
+        const trimmedEmail = email.trim();
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+        if (authError) throw authError;
+        if (!authData.user) return;
+
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        if (profile.role !== 'ucar_president' && profile.status !== 'active') {
+          setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Directeur UCAR.");
+          await supabase.auth.signOut();
+          return;
+        }
+
+        const displayRole = Object.keys(ROLE_MAPPING).find(key => ROLE_MAPPING[key as keyof typeof ROLE_MAPPING] === profile.role) || profile.role;
+
+        localStorage.setItem('userRole', displayRole);
+        if (profile.institution_id) localStorage.setItem('userInstitution', profile.institution_id);
+        
+        // Use the selected jobTitle if available (for flexibility), otherwise use profile default
+        const activeFunction = (role === 'Personnel administratif' && jobTitle) ? jobTitle : profile.job_title;
+        if (activeFunction) localStorage.setItem('userFunction', activeFunction);
+        
+        router.push('/dashboard');
       }
-    } else {
-      if (role !== 'Directeur' && authStatus === 'pending') {
-        setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Directeur UCAR.");
-        return;
-      }
-      localStorage.setItem('userRole', role);
-      if (institution) {
-        localStorage.setItem('userInstitution', institution);
-      }
-      if (jobTitle) {
-        localStorage.setItem('userFunction', jobTitle);
-      }
-      router.push('/dashboard');
+    } catch (error: any) {
+      setLoginError(error.message || "Une erreur est survenue lors de l'authentification.");
     }
   };
 
@@ -524,7 +607,7 @@ const SignIn = () => {
           <Card className="p-6 sm:p-8 shadow-sm border-slate-100">
             {/* Role Tabs */}
             <div className="flex bg-slate-50 p-1 rounded-xl mb-6 border border-slate-100">
-              {(['Staff', 'Directeur de l\'université', 'Directeur'] as Role[]).map((r) => (
+              {(['Personnel administratif', 'Directeur d\'Établissement', 'Président UCAR'] as Role[]).map((r) => (
                 <button
                   key={r}
                   type="button"
@@ -535,8 +618,10 @@ const SignIn = () => {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {r === 'Staff' ? <GraduationCap size={18} className="mb-1" /> : r === 'Directeur de l\'université' ? <UserCircle2 size={18} className="mb-1" /> : <Shield size={18} className="mb-1" />}
-                  <span className="text-[10px] uppercase tracking-wider text-center leading-tight">{r === 'Staff' ? 'Staff' : r === 'Directeur de l\'université' ? 'Dir. Université' : 'Directeur'}</span>
+                  {r === 'Personnel administratif' ? <GraduationCap size={18} className="mb-1" /> : r === 'Directeur d\'Établissement' ? <UserCircle2 size={18} className="mb-1" /> : <Shield size={18} className="mb-1" />}
+                  <span className="text-[10px] uppercase tracking-wider text-center leading-tight">
+                    {r === 'Personnel administratif' ? 'Staff' : r === 'Directeur d\'Établissement' ? 'Directeur' : 'Président'}
+                  </span>
                 </button>
               ))}
             </div>
@@ -545,34 +630,34 @@ const SignIn = () => {
             <div className="mb-6 px-4 py-3 bg-primary/5 border border-primary/10 rounded-xl flex items-start gap-2">
               <Info size={14} className="text-primary mt-0.5 flex-shrink-0" />
               <p className="text-xs text-primary/80 font-medium leading-relaxed">
-                {role === 'Staff'
+                {role === 'Personnel administratif'
                   ? 'Trésorier, Chef du Personnel, Scolarité ou Recherche — accès limité aux KPIs selon votre fonction.'
-                  : role === 'Directeur de l\'université'
+                  : role === 'Directeur d\'Établissement'
                     ? 'Directeur d\'établissement — vue complète de tous les KPIs de votre institution.'
-                    : 'Directeur UCAR — vue consolidée sur les 30+ établissements du réseau.'}
+                    : 'Président UCAR — vue consolidée sur les 30+ établissements du réseau.'}
               </p>
             </div>
 
-            {authStatus === 'pending' && !isRegistering && (
+            {authStatus === 'pending' && !isRegistering ? (
               <div className="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2">
                 <Info size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-emerald-800 font-medium leading-relaxed">
                   Votre demande a été envoyée avec succès. Vous devez attendre la vérification et l'autorisation du Directeur UCAR pour vous connecter.
                 </p>
               </div>
-            )}
+            ) : null}
 
-            {loginError && (
+            {loginError ? (
               <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
                 <Info size={14} className="text-red-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-red-800 font-medium leading-relaxed">
                   {loginError}
                 </p>
               </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {isRegistering && (
+              {isRegistering ? (
                 <InputField
                   id="fullName"
                   type="text"
@@ -583,31 +668,49 @@ const SignIn = () => {
                   icon={UserCircle2}
                   required
                 />
-              )}
+              ) : null}
 
-              {/* Staff function dropdown — only for Staff role */}
-              {isRegistering && role === 'Staff' && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Fonction / Poste</label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <select
-                      value={jobTitle}
-                      onChange={(e) => setJobTitle(e.target.value)}
-                      className="w-full h-11 pl-10 pr-10 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-300"
-                      required
-                    >
-                      <option value="" disabled>Sélectionnez votre fonction</option>
-                      {STAFF_FUNCTIONS.map((fn) => (
-                        <option key={fn.value} value={fn.value}>{fn.label} — {fn.domain}</option>
-                      ))}
-                    </select>
+              {/* Staff role selection grid — more visible as requested */}
+              {isRegistering && role === 'Personnel administratif' ? (
+                <div className="space-y-3">
+                  <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Shield size={16} className="text-primary" />
+                    Votre rôle administratif
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {STAFF_FUNCTIONS.map((fn) => (
+                      <button
+                        key={fn.value}
+                        type="button"
+                        onClick={() => setJobTitle(fn.value)}
+                        className={`text-left p-3 rounded-lg border transition-all duration-200 ${
+                          jobTitle === fn.value 
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                            : 'border-border hover:border-primary/50 bg-card'
+                        }`}
+                      >
+                        <p className="text-xs font-bold leading-tight">{fn.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-tighter">{fn.domain}</p>
+                      </button>
+                    ))}
                   </div>
+                  {/* Hidden select for form validation if needed */}
+                  <select
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    className="sr-only"
+                    required
+                  >
+                    <option value="">Sélectionnez un rôle</option>
+                    {STAFF_FUNCTIONS.map((fn) => (
+                      <option key={fn.value} value={fn.value}>{fn.label}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+              ) : null}
 
-              {/* Institution dropdown — for Staff and Directeur de l'université */}
-              {isRegistering && (role === 'Staff' || role === 'Directeur de l\'université') && (
+              {/* Institution dropdown — for Staff and Directeur d'Établissement */}
+              {isRegistering && (role === 'Personnel administratif' || role === 'Directeur d\'Établissement') ? (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Établissement</label>
                   <div className="relative">
@@ -618,19 +721,16 @@ const SignIn = () => {
                       className="w-full h-11 pl-10 pr-10 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-300"
                       required
                     >
-                      <option value="" disabled>Sélectionnez votre établissement</option>
-                      <option value="ENSTAB">ENSTAB</option>
-                      <option value="ENICarthage">ENICarthage</option>
-                      <option value="SUP'COM">SUP&apos;COM</option>
-                      <option value="IHEC Carthage">IHEC Carthage</option>
-                      <option value="ISG Tunis">ISG Tunis</option>
-                      <option value="FSB">FSB</option>
-                      <option value="INAT">INAT</option>
-                      <option value="Autre">Autre Établissement UCAR</option>
+                      <option value="" disabled>
+                        {loadingInstitutions ? "Chargement des établissements..." : "Sélectionnez votre établissement"}
+                      </option>
+                      {institutions.map((inst) => (
+                        <option key={inst.id} value={inst.id}>{inst.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               <InputField
                 id="email"
@@ -661,7 +761,7 @@ const SignIn = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                {!isRegistering && <Link href="#">Mot de passe oublié ?</Link>}
+                {!isRegistering ? <Link href="#">Mot de passe oublié ?</Link> : null}
               </div>
 
               <Button type="submit" variant="primary" fullWidth className="group">
@@ -678,8 +778,12 @@ const SignIn = () => {
               <button 
                 type="button"
                 onClick={() => {
-                  setIsRegistering(!isRegistering);
-                  setLoginError("");
+                  import('react').then(React => {
+                    React.startTransition(() => {
+                      setIsRegistering(!isRegistering);
+                      setLoginError("");
+                    });
+                  });
                 }}
                 className="text-primary hover:underline font-medium"
               >
