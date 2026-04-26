@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout'
-import { institutions, alerts, achievements, kpiHistory, PERIODS } from '@/lib/data'
+import { institutions, alerts, achievements, kpiHistory, PERIODS, DOMAIN_KPI_MAP, kpiFamilies, getProcessCategories, predictions } from '@/lib/data'
 import { useState, useEffect } from 'react'
 import {
   LineChart,
@@ -26,41 +26,74 @@ import {
   ArrowRight,
   Clock,
   BookOpen,
-  FileText
+  FileText,
+  Shield
 } from 'lucide-react'
 import Link from 'next/link'
 
+// Map domain field names to icon components
+const ICON_MAP: Record<string, any> = {
+  Award, AlertTriangle, Wallet, Activity, BookOpen, TrendingUp, Target
+}
+
 export default function Dashboard() {
-  const [userRole, setUserRole] = useState('UCAR');
+  const [userRole, setUserRole] = useState('Directeur');
+  const [userInstitution, setUserInstitution] = useState('');
+  const [userFunction, setUserFunction] = useState('');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setUserRole(localStorage.getItem('userRole') || 'UCAR');
+    setUserRole(localStorage.getItem('userRole') || 'Directeur');
+    setUserInstitution(localStorage.getItem('userInstitution') || '');
+    setUserFunction(localStorage.getItem('userFunction') || '');
     setIsClient(true);
   }, []);
 
-  if (!isClient) return null; // Avoid hydration mismatch
+  if (!isClient) return null;
 
-  // Filter data based on role
-  // TODO: When backend is integrated, this should dynamically filter by the staff member's actual establishment
-  const displayInstitutions = userRole === 'UCAR' 
-    ? institutions 
-    : [institutions.find(i => i.initials === 'ENSTAB') || institutions[0]];
+  const isGlobal = userRole === 'Directeur';
+  const isStaff = userRole === 'Staff';
+  const staffDomainKpis = isStaff ? (DOMAIN_KPI_MAP[userFunction] || []) : [];
+  const staffDomainLabel = isStaff
+    ? (kpiFamilies.find(f => f.key === userFunction)?.label || userFunction)
+    : '';
 
-  const isGlobal = userRole === 'UCAR';
+  const displayInstitutions = isGlobal
+    ? institutions
+    : [institutions.find(i => i.initials === userInstitution || i.name === userInstitution) || institutions[0]];
 
-  // Global Aggregations
+  // Get institution-specific process data
+  const displayProcesses = isGlobal
+    ? getProcessCategories() // network-wide aggregate
+    : getProcessCategories(displayInstitutions[0].name);
+
+  // Aggregations
   const globalSuccessRate = (displayInstitutions.reduce((acc, curr) => acc + curr.successRate, 0) / displayInstitutions.length).toFixed(1)
   const globalBudgetExecution = (displayInstitutions.reduce((acc, curr) => acc + curr.budgetExecution, 0) / displayInstitutions.length).toFixed(1)
   const globalDropoutRate = (displayInstitutions.reduce((acc, curr) => acc + curr.dropoutRate, 0) / displayInstitutions.length).toFixed(1)
   const totalPublications = displayInstitutions.reduce((acc, curr) => acc + curr.publicationsCount, 0)
 
-  // Trend Data Calculation (All 5 Universities over the last 6 months / 1 Semester)
+  // All possible KPI cards (for Directeur & Dir. Université)
+  const allKpiCards = [
+    { field: 'successRate', label: 'Taux de Réussite Moyen', value: `${globalSuccessRate}%`, iconComp: Award, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', trend: '+2.4%', trendColor: 'text-emerald-600', trendIcon: TrendingUp, trendLabel: 'vs an dernier' },
+    { field: 'budgetExecution', label: 'Exécution Budgétaire', value: `${globalBudgetExecution}%`, iconComp: Wallet, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', trend: null, trendColor: 'text-slate-500', trendIcon: Activity, trendLabel: 'Moyenne réseau en phase' },
+    { field: 'dropoutRate', label: "Taux d'Abandon Moyen", value: `${globalDropoutRate}%`, iconComp: AlertTriangle, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', trend: '+0.5%', trendColor: 'text-amber-600', trendIcon: TrendingUp, trendLabel: '(Attention requise)' },
+    { field: 'publicationsCount', label: 'Publications Totales', value: `${totalPublications}`, iconComp: BookOpen, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600', trend: null, trendColor: 'text-indigo-600', trendIcon: Target, trendLabel: 'Objectif annuel dépassé' },
+    { field: 'employabilityRate', label: "Taux d'Employabilité", value: `${(displayInstitutions.reduce((a, c) => a + c.employabilityRate, 0) / displayInstitutions.length).toFixed(1)}%`, iconComp: TrendingUp, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600', trend: null, trendColor: 'text-emerald-600', trendIcon: Target, trendLabel: 'Moyenne réseau' },
+    { field: 'absenteeismRate', label: "Taux d'Absentéisme", value: `${(displayInstitutions.reduce((a, c) => a + c.absenteeismRate, 0) / displayInstitutions.length).toFixed(1)}%`, iconComp: Activity, iconBg: 'bg-red-50', iconColor: 'text-red-600', trend: null, trendColor: 'text-red-600', trendIcon: AlertTriangle, trendLabel: 'Surveillé' },
+  ]
+
+  // Filter cards: Staff sees only their domain KPIs, others see the default 4
+  const visibleKpiCards = isStaff
+    ? allKpiCards.filter(card => staffDomainKpis.some((dk: any) => dk.field === card.field))
+    : allKpiCards.slice(0, 4) // Default 4 for Directeur / Dir. Université
+
+  // Trend Data
   const ONE_SEMESTER_PERIODS = PERIODS.slice(-6)
   const startIndex = PERIODS.length - 6
   const networkTrendData = ONE_SEMESTER_PERIODS.map((period, index) => {
     const dataIndex = startIndex + index
-    const point: any = { period: period.split('/')[1] } // Show only the month number
+    const point: any = { period: period.split('/')[1] }
     displayInstitutions.forEach(inst => {
       if (inst.status !== 'Hors ligne' && kpiHistory[inst.id]) {
         point[inst.name] = kpiHistory[inst.id][dataIndex].successRate
@@ -69,7 +102,6 @@ export default function Dashboard() {
     return point
   })
 
-  // Rankings
   const topPerformers = [...displayInstitutions].sort((a, b) => b.successRate - a.successRate).slice(0, 2)
 
   return (
@@ -83,10 +115,15 @@ export default function Dashboard() {
               {isGlobal ? "Centre de Commandement UCAR" : `Tableau de Bord - ${displayInstitutions[0].name}`}
             </h1>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {isGlobal ? "Vue consolidée du réseau universitaire" : "Vue détaillée de l'établissement"}
+              {isGlobal ? "Vue consolidée du réseau universitaire" : isStaff ? `Domaine : ${staffDomainLabel}` : "Vue détaillée de l'établissement"}
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {isStaff && (
+              <span className="flex items-center gap-2 px-3 py-1.5 bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                <Shield size={12} /> {staffDomainLabel}
+              </span>
+            )}
             <Link 
               href="/dashboard/reports"
               className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm"
@@ -97,69 +134,41 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 1. Global KPIs Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-600">Taux de Réussite Moyen</h3>
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <Award size={18} className="text-emerald-600" />
-              </div>
-            </div>
+        {/* Staff domain notice */}
+        {isStaff && staffDomainKpis.length === 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+            <AlertTriangle size={18} className="text-amber-500 mt-0.5" />
             <div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">{globalSuccessRate}%</div>
-              <p className="text-sm text-emerald-600 flex items-center gap-1 font-medium">
-                <TrendingUp size={14} /> <span>+2.4%</span> <span className="text-slate-500 font-normal">vs an dernier</span>
-              </p>
+              <p className="text-sm font-bold text-amber-800">Aucun KPI direct pour le domaine « {staffDomainLabel} »</p>
+              <p className="text-xs text-amber-600 mt-1">Ce domaine n'a pas encore de données quantifiées dans le système. Les données seront disponibles après la prochaine ingestion.</p>
             </div>
           </div>
+        )}
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-600">Exécution Budgétaire</h3>
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Wallet size={18} className="text-blue-600" />
+        {/* KPI Cards — dynamically filtered */}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${visibleKpiCards.length <= 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4`}>
+          {visibleKpiCards.map((card) => {
+            const IconComp = card.iconComp
+            const TrendIcon = card.trendIcon
+            return (
+              <div key={card.field} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-medium text-slate-600">{card.label}</h3>
+                  <div className={`p-2 ${card.iconBg} rounded-lg`}>
+                    <IconComp size={18} className={card.iconColor} />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-slate-900 mb-1">{card.value}</div>
+                  <p className={`text-sm ${card.trendColor} flex items-center gap-1 font-medium`}>
+                    <TrendIcon size={14} />
+                    {card.trend && <span>{card.trend}</span>}
+                    <span className={card.trend ? "text-slate-500 font-normal" : ""}>{card.trendLabel}</span>
+                  </p>
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">{globalBudgetExecution}%</div>
-              <p className="text-sm text-slate-500 flex items-center gap-1 font-normal">
-                <Activity size={14} className="text-slate-400" /> <span>Moyenne réseau en phase</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-600">Taux d'Abandon Moyen</h3>
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <AlertTriangle size={18} className="text-amber-600" />
-              </div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">{globalDropoutRate}%</div>
-              <p className="text-sm text-amber-600 flex items-center gap-1 font-medium">
-                <TrendingUp size={14} /> <span>+0.5%</span> <span className="text-slate-500 font-normal">(Attention requise)</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-600">Publications Totales</h3>
-              <div className="p-2 bg-indigo-50 rounded-lg">
-                <BookOpen size={18} className="text-indigo-600" />
-              </div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-slate-900 mb-1">{totalPublications}</div>
-              <p className="text-sm text-indigo-600 flex items-center gap-1 font-medium">
-                <Target size={14} /> <span>Objectif annuel dépassé</span>
-              </p>
-            </div>
-          </div>
-
+            )
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -235,7 +244,7 @@ export default function Dashboard() {
             </div>
 
             <div className="flex-1 space-y-4">
-              {alerts.slice(0, 4).map((alert, i) => (
+              {alerts.filter(a => !isStaff || a.kpiFamily === userFunction).slice(0, 4).map((alert, i) => (
                 <div key={i} className="group p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-cyan-500/30 transition-all cursor-default">
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
@@ -322,7 +331,128 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 5. Performance Leaderboard & Quick Actions */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* 5. ALL INSTITUTIONAL PROCESSES — Documentation requirement         */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">Processus Institutionnels</h2>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                {isStaff ? `Filtrés par domaine : ${staffDomainLabel}` : 'Couverture complète de tous les processus universitaires'}
+              </p>
+            </div>
+            <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest border border-slate-200">
+              15 Domaines
+            </span>
+          </div>
+
+          {displayProcesses.map((cat) => {
+            // Staff: filter processes to only show matching domain
+            const visibleProcesses = isStaff
+              ? cat.processes.filter(p => p.key === userFunction)
+              : cat.processes
+
+            if (visibleProcesses.length === 0) return null
+
+            return (
+              <div key={cat.category} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-100">
+                  <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">{cat.category}</h3>
+                </div>
+                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {visibleProcesses.map((process) => (
+                    <div key={process.key} className="rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all">
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className={`text-sm font-black ${process.color}`}>{process.label}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {process.kpis.map((kpi, idx) => (
+                          <div key={idx} className="flex items-center justify-between">
+                            <span className="text-xs text-slate-500 font-medium">{kpi.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-800">{kpi.value}</span>
+                              {kpi.trend && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                  kpi.status === 'good' ? 'bg-emerald-50 text-emerald-600' :
+                                  kpi.status === 'warning' ? 'bg-amber-50 text-amber-600' :
+                                  'bg-red-50 text-red-600'
+                                }`}>
+                                  {kpi.trend}
+                                </span>
+                              )}
+                              <span className={`w-2 h-2 rounded-full ${
+                                kpi.status === 'good' ? 'bg-emerald-500' :
+                                kpi.status === 'warning' ? 'bg-amber-500' :
+                                'bg-red-500'
+                              }`} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* 6. PREDICTIVE ANALYTICS ENGINE                                     */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {!isStaff && (
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700 p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-violet-500/20 rounded-xl border border-violet-500/30">
+                  <BrainCircuit size={20} className="text-violet-400" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black text-white">Moteur Prédictif</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Anticipation des tendances et risques institutionnels</p>
+                </div>
+              </div>
+              <span className="bg-violet-500/20 text-violet-300 text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest border border-violet-500/30 flex items-center gap-1.5">
+                <Activity size={10} /> IA Prédictive
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {predictions.map((pred, idx) => (
+                <div key={idx} className={`rounded-xl p-4 border transition-all hover:scale-[1.01] ${
+                  pred.risk === 'high' ? 'bg-red-500/10 border-red-500/20' :
+                  pred.risk === 'medium' ? 'bg-amber-500/10 border-amber-500/20' :
+                  'bg-emerald-500/10 border-emerald-500/20'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
+                        pred.risk === 'high' ? 'bg-red-500/20 text-red-300' :
+                        pred.risk === 'medium' ? 'bg-amber-500/20 text-amber-300' :
+                        'bg-emerald-500/20 text-emerald-300'
+                      }`}>
+                        {pred.risk === 'high' ? 'Risque Élevé' : pred.risk === 'medium' ? 'Risque Moyen' : 'Tendance Positive'}
+                      </span>
+                      <span className="text-[9px] font-bold text-slate-400">{pred.institution}</span>
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-500">Horizon : {pred.horizon}</span>
+                  </div>
+                  <p className="text-xs font-medium text-slate-300 leading-relaxed mb-3">{pred.prediction}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${
+                        pred.risk === 'high' ? 'bg-red-500' : pred.risk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                      }`} style={{ width: `${pred.confidence}%` }} />
+                    </div>
+                    <span className="text-[10px] font-black text-slate-400">{pred.confidence}% confiance</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 7. Performance Leaderboard & Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
             <h2 className="text-sm font-black text-slate-800 mb-1">Palmarès des Performances</h2>
@@ -363,6 +493,18 @@ export default function Dashboard() {
                 <h3 className="text-xs font-black text-slate-800">Rapports</h3>
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Synthèse mensuelle</p>
               </Link>
+
+              <Link href="/dashboard/ai-assistant" className="p-4 rounded-xl border border-slate-200 hover:border-violet-300 hover:bg-violet-50/50 transition-all group">
+                <BrainCircuit size={24} className="text-violet-600 mb-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xs font-black text-slate-800">Assistant IA</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Diagnostic intelligent</p>
+              </Link>
+              
+              <Link href="/dashboard/data-integration" className="p-4 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all group">
+                <ArrowRight size={24} className="text-amber-600 mb-3 group-hover:scale-110 transition-transform" />
+                <h3 className="text-xs font-black text-slate-800">Ingestion</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Importer les données</p>
+              </Link>
             </div>
           </div>
         </div>
@@ -371,3 +513,4 @@ export default function Dashboard() {
     </DashboardLayout>
   )
 }
+

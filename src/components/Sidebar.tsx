@@ -13,6 +13,7 @@ import {
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { motion } from 'framer-motion'
+import { kpiFamilies } from '@/lib/data'
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -28,19 +29,29 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [userRole, setUserRole] = useState('UCAR')
+  const [userRole, setUserRole] = useState('Directeur')
+  const [userInstitution, setUserInstitution] = useState('')
+  const [userFunction, setUserFunction] = useState('')
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    setUserRole(localStorage.getItem('userRole') || 'UCAR')
+    setUserRole(localStorage.getItem('userRole') || 'Directeur')
+    setUserInstitution(localStorage.getItem('userInstitution') || '')
+    setUserFunction(localStorage.getItem('userFunction') || '')
     setIsClient(true)
   }, [])
 
   const filteredNavItems = navItems.filter(item => {
-    if (userRole !== 'UCAR') {
-      if (item.href === '/dashboard/institutions' || item.href === '/dashboard/comparison') {
-        return false
-      }
+    // Directeur sees everything
+    if (userRole === 'Directeur') return true
+    // Directeur de l'université sees everything except multi-institution comparison
+    if (userRole === 'Directeur de l\'université') {
+      if (item.href === '/dashboard/institutions') return false
+      return true
+    }
+    // Staff: limited nav — no institutions, no comparison
+    if (item.href === '/dashboard/institutions' || item.href === '/dashboard/comparison') {
+      return false
     }
     return true
   })
@@ -59,6 +70,26 @@ export default function Sidebar() {
   const itemVariants = {
     hidden: { opacity: 0, x: -20 },
     show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 70 } }
+  }
+
+  // Display info based on role
+  const getAvatarInitials = () => {
+    if (userRole === 'Directeur') return 'DR'
+    if (userRole === 'Directeur de l\'université') return 'DU'
+    return 'ST'
+  }
+
+  const getDisplayName = () => {
+    if (userRole === 'Directeur') return 'Directeur UCAR'
+    if (userRole === 'Directeur de l\'université') return `Dir. ${userInstitution || 'Université'}`
+    // Staff: show the domain label
+    const domainLabel = kpiFamilies.find(f => f.key === userFunction)?.label
+    return domainLabel ? `Staff — ${domainLabel}` : 'Staff'
+  }
+
+  const getDisplayEmail = () => {
+    if (userRole === 'Directeur') return 'rectorat@ucar.tn'
+    return `contact@${(userInstitution || 'ucar').toLowerCase().replace(/[^a-z]/g, '')}.tn`
   }
 
   return (
@@ -118,14 +149,14 @@ export default function Sidebar() {
         {isClient && (
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-cyan-600/20">
-              {userRole === 'UCAR' ? 'AD' : userRole === 'Président' ? 'PR' : 'ST'}
+              {getAvatarInitials()}
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-bold text-slate-800 truncate">
-                {userRole === 'UCAR' ? 'Admin UCAR' : userRole === 'Président' ? 'Président ENSTAB' : 'Staff ENSTAB'}
+                {getDisplayName()}
               </span>
-              <span className="text-xs font-medium text-slate-500">
-                {userRole === 'UCAR' ? 'rectorat@ucar.tn' : 'contact@enstab.tn'}
+              <span className="text-xs font-medium text-slate-500 truncate">
+                {getDisplayEmail()}
               </span>
             </div>
           </div>

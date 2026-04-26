@@ -38,7 +38,8 @@ export default function ReportsPage() {
 
   useEffect(() => {
     const role = localStorage.getItem('userRole')
-    setUserRole(role === 'UCAR' ? 'admin' : 'institute')
+    // Directeur and Directeur de l'université get admin access to reports
+    setUserRole((role === 'Directeur' || role === 'Directeur de l\'université') ? 'admin' : 'institute')
     setIsClient(true)
   }, [])
 

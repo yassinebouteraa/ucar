@@ -73,7 +73,7 @@ export default function AIAssistantPage() {
 
   if (!isClient) return null;
 
-  const currentSuggestions = userRole === 'UCAR' ? ucarSuggestions : instSuggestions
+  const currentSuggestions = (userRole === 'Directeur' || userRole === 'Directeur de l\'université') ? ucarSuggestions : instSuggestions
 
   const handleSend = () => {
     if (!input.trim()) return

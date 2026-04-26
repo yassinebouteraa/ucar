@@ -9,7 +9,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const [hasPendingAuth, setHasPendingAuth] = useState(false)
-  const [pendingAuthDetails, setPendingAuthDetails] = useState({ name: '', inst: '' })
+  const [pendingAuthDetails, setPendingAuthDetails] = useState({ name: '', inst: '', role: '' })
 
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
@@ -30,8 +30,9 @@ export default function Navbar() {
     if (pending) {
       setHasPendingAuth(true)
       setPendingAuthDetails({
-        name: localStorage.getItem('pendingAuthName') || 'Nouveau Staff',
-        inst: localStorage.getItem('pendingAuthInst') || 'Une institution'
+        name: localStorage.getItem('pendingAuthName') || 'Nouveau membre',
+        inst: localStorage.getItem('pendingAuthInst') || 'Une institution',
+        role: localStorage.getItem('pendingAuthRole') || 'Staff'
       })
     }
 
@@ -112,9 +113,9 @@ export default function Navbar() {
                           <User size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-indigo-300 mb-1">Nouvelle demande d'accès</p>
+                          <p className="text-xs font-bold text-indigo-300 mb-1">Nouvelle demande d'accès ({pendingAuthDetails.role})</p>
                           <p className="text-[11px] text-slate-300 group-hover:text-white leading-tight mb-2">
-                            <span className="font-semibold text-white">{pendingAuthDetails.name}</span> demande l'accès pour l'établissement <span className="font-semibold text-white">{pendingAuthDetails.inst}</span>.
+                            <span className="font-semibold text-white">{pendingAuthDetails.name}</span> demande l'accès en tant que <span className="font-semibold text-white">{pendingAuthDetails.role}</span> pour l'établissement <span className="font-semibold text-white">{pendingAuthDetails.inst}</span>.
                           </p>
                           <div className="flex gap-2">
                             <button className="px-3 py-1.5 bg-indigo-500 text-white text-[10px] font-bold rounded shadow-sm hover:bg-indigo-400 transition-colors"

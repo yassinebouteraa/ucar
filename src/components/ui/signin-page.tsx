@@ -441,14 +441,25 @@ const FormFooter = ({ text, linkText, linkHref }: FormFooterProps) => (
 // MAIN SIGNIN COMPONENT
 // ============================================================================
 
-type Role = 'Institution' | 'UCAR' | 'Président';
+type Role = 'Staff' | 'Directeur de l\'université' | 'Directeur';
+
+const STAFF_FUNCTIONS = [
+  { value: 'academic',        label: 'Responsable Scolarité',              domain: 'Académique' },
+  { value: 'employment',      label: 'Responsable Insertion Professionnelle', domain: 'Insertion Pro' },
+  { value: 'finance',         label: 'Trésorier / Responsable Financier',  domain: 'Finance' },
+  { value: 'esg',             label: 'Responsable ESG / RSE',              domain: 'ESG / RSE' },
+  { value: 'hr',              label: 'Chef du Personnel / RH',             domain: 'Ressources Humaines' },
+  { value: 'research',        label: 'Responsable Recherche',              domain: 'Recherche' },
+  { value: 'infrastructure',  label: 'Responsable Infrastructure',         domain: 'Infrastructures' },
+  { value: 'partnerships',    label: 'Responsable Partenariats & Relations Internationales', domain: 'Partenariats' },
+];
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [role, setRole] = useState<Role>('Institution');
+  const [role, setRole] = useState<Role>('Staff');
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -464,12 +475,18 @@ const SignIn = () => {
     setLoginError("");
 
     if (isRegistering) {
-      if (role === 'Institution') {
-        // Simulate account creation pending approval for staff
+      if (role === 'Directeur') {
+        // Directeur (UCAR president) bypasses pending status
+        localStorage.setItem('userRole', role);
+        router.push('/dashboard');
+      } else {
+        // Staff and Directeur de l'université need approval
         setAuthStatus('pending');
         localStorage.setItem('hasPendingAuthRequest', 'true');
-        localStorage.setItem('pendingAuthName', fullName || 'Nouveau Staff');
+        localStorage.setItem('pendingAuthName', fullName || 'Nouveau membre');
         localStorage.setItem('pendingAuthInst', institution || 'Une institution');
+        localStorage.setItem('pendingAuthRole', role);
+        localStorage.setItem('pendingAuthFunction', jobTitle || '');
         
         setIsRegistering(false);
         setEmail("");
@@ -477,17 +494,19 @@ const SignIn = () => {
         setFullName("");
         setInstitution("");
         setJobTitle("");
-      } else {
-        // Presidents and UCAR admins bypass pending status in this demo
-        localStorage.setItem('userRole', role);
-        router.push('/dashboard');
       }
     } else {
-      if (role === 'Institution' && authStatus === 'pending') {
-        setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Président.");
+      if (role !== 'Directeur' && authStatus === 'pending') {
+        setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Directeur UCAR.");
         return;
       }
       localStorage.setItem('userRole', role);
+      if (institution) {
+        localStorage.setItem('userInstitution', institution);
+      }
+      if (jobTitle) {
+        localStorage.setItem('userFunction', jobTitle);
+      }
       router.push('/dashboard');
     }
   };
@@ -505,7 +524,7 @@ const SignIn = () => {
           <Card className="p-6 sm:p-8 shadow-sm border-slate-100">
             {/* Role Tabs */}
             <div className="flex bg-slate-50 p-1 rounded-xl mb-6 border border-slate-100">
-              {(['Institution', 'UCAR', 'Président'] as Role[]).map((r) => (
+              {(['Staff', 'Directeur de l\'université', 'Directeur'] as Role[]).map((r) => (
                 <button
                   key={r}
                   type="button"
@@ -516,8 +535,8 @@ const SignIn = () => {
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {r === 'Institution' ? <GraduationCap size={18} className="mb-1" /> : r === 'UCAR' ? <Shield size={18} className="mb-1" /> : <UserCircle2 size={18} className="mb-1" />}
-                  <span className="text-[10px] uppercase tracking-wider">{r === 'Institution' ? 'Staff' : r === 'UCAR' ? 'Admin' : 'Président'}</span>
+                  {r === 'Staff' ? <GraduationCap size={18} className="mb-1" /> : r === 'Directeur de l\'université' ? <UserCircle2 size={18} className="mb-1" /> : <Shield size={18} className="mb-1" />}
+                  <span className="text-[10px] uppercase tracking-wider text-center leading-tight">{r === 'Staff' ? 'Staff' : r === 'Directeur de l\'université' ? 'Dir. Université' : 'Directeur'}</span>
                 </button>
               ))}
             </div>
@@ -526,11 +545,11 @@ const SignIn = () => {
             <div className="mb-6 px-4 py-3 bg-primary/5 border border-primary/10 rounded-xl flex items-start gap-2">
               <Info size={14} className="text-primary mt-0.5 flex-shrink-0" />
               <p className="text-xs text-primary/80 font-medium leading-relaxed">
-                {role === 'Institution'
-                  ? 'Trésorier, Chef Personnel, Scolarité ou Recherche — accès limité aux KPIs de votre institution.'
-                  : role === 'UCAR'
-                    ? 'Présidente, Vice-Président ou SG — vue consolidée sur les 30+ établissements.'
-                    : 'Président d\'institution — consulte tous les KPIs de son établissement.'}
+                {role === 'Staff'
+                  ? 'Trésorier, Chef du Personnel, Scolarité ou Recherche — accès limité aux KPIs selon votre fonction.'
+                  : role === 'Directeur de l\'université'
+                    ? 'Directeur d\'établissement — vue complète de tous les KPIs de votre institution.'
+                    : 'Directeur UCAR — vue consolidée sur les 30+ établissements du réseau.'}
               </p>
             </div>
 
@@ -538,7 +557,7 @@ const SignIn = () => {
               <div className="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2">
                 <Info size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-emerald-800 font-medium leading-relaxed">
-                  Votre demande a été envoyée avec succès. Vous devez attendre la vérification et l'autorisation du Président pour vous connecter.
+                  Votre demande a été envoyée avec succès. Vous devez attendre la vérification et l'autorisation du Directeur UCAR pour vous connecter.
                 </p>
               </div>
             )}
@@ -565,19 +584,30 @@ const SignIn = () => {
                   required
                 />
               )}
-              {isRegistering && (
-                <InputField
-                  id="jobTitle"
-                  type="text"
-                  label="Poste / Fonction"
-                  placeholder="ex: Trésorier, Directeur..."
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  icon={Briefcase}
-                  required
-                />
+
+              {/* Staff function dropdown — only for Staff role */}
+              {isRegistering && role === 'Staff' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Fonction / Poste</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <select
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      className="w-full h-11 pl-10 pr-10 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-all duration-300"
+                      required
+                    >
+                      <option value="" disabled>Sélectionnez votre fonction</option>
+                      {STAFF_FUNCTIONS.map((fn) => (
+                        <option key={fn.value} value={fn.value}>{fn.label} — {fn.domain}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               )}
-              {isRegistering && (role === 'Institution' || role === 'Président') && (
+
+              {/* Institution dropdown — for Staff and Directeur de l'université */}
+              {isRegistering && (role === 'Staff' || role === 'Directeur de l\'université') && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Établissement</label>
                   <div className="relative">
@@ -591,7 +621,7 @@ const SignIn = () => {
                       <option value="" disabled>Sélectionnez votre établissement</option>
                       <option value="ENSTAB">ENSTAB</option>
                       <option value="ENICarthage">ENICarthage</option>
-                      <option value="SUP'COM">SUP'COM</option>
+                      <option value="SUP'COM">SUP&apos;COM</option>
                       <option value="IHEC Carthage">IHEC Carthage</option>
                       <option value="ISG Tunis">ISG Tunis</option>
                       <option value="FSB">FSB</option>
@@ -601,6 +631,7 @@ const SignIn = () => {
                   </div>
                 </div>
               )}
+
               <InputField
                 id="email"
                 type="email"
