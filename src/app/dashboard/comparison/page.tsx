@@ -2,13 +2,14 @@
 
 import DashboardLayout from '@/components/DashboardLayout'
 import {
-  institutions,
+  institutions as mockInstitutions,
   Institution,
   InstitutionType,
   PERIODS,
-  kpiHistory,
+  kpiHistory as mockKpiHistory,
   institutionAccent,
 } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
 import {
   AreaChart,
   Area,
@@ -78,20 +79,62 @@ export default function ComparisonPage() {
   const [kpiKey, setKpiKey] = useState<KpiKey>('successRate')
   const [typeFilter, setTypeFilter] = useState<'Tous' | InstitutionType>('Tous')
   const [cityFilter, setCityFilter] = useState<string>('Toutes')
+  const [loading, setLoading] = useState(true)
+  const [institutions, setInstitutions] = useState<Institution[]>(mockInstitutions)
+  const [kpiHistory, setKpiHistory] = useState<any>(mockKpiHistory)
 
   // Multi-establishment comparator state (max 3)
   const [selectedInstitutions, setSelectedInstitutions] = useState<string[]>([])
 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [
+          { data: dbInstitutions },
+          { data: dbSnapshots }
+        ] = await Promise.all([
+          supabase.from('institutions').select('*'),
+          supabase.from('kpi_snapshots').select('*').order('created_at', { ascending: false })
+        ]);
+
+        if (dbInstitutions) {
+          const merged = dbInstitutions.map(inst => {
+            const latest = dbSnapshots?.find(s => s.institution_id === inst.id);
+            const kpiData = latest?.data || {};
+            return {
+              ...inst,
+              successRate: kpiData.success_rate || 0,
+              budgetExecution: kpiData.budget_execution || 0,
+              dropoutRate: kpiData.dropout_rate || 0,
+              employabilityRate: kpiData.employability_rate || 0,
+              absenteeismRate: kpiData.absenteeism_rate || 0,
+              publicationsCount: kpiData.publications_count || 0,
+              initials: inst.name.substring(0, 2).toUpperCase(),
+              status: kpiData.status || 'Nominal',
+              color: '#F1F5F9'
+            };
+          });
+          setInstitutions(merged);
+        }
+      } catch (err) {
+        console.error("Error loading comparison data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
   // Seed the custom selection once
   useEffect(() => {
-    if (selectedInstitutions.length > 0 || institutions.length === 0) return
+    if (loading || selectedInstitutions.length > 0 || institutions.length === 0) return
     const onlineInst = institutions.filter(i => i.status !== 'Hors ligne')
     const seed = highlighted && onlineInst.find(o => o.name === highlighted)
       ? [highlighted, ...onlineInst.filter(o => o.name !== highlighted).slice(0, 1).map(o => o.name)]
       : onlineInst.slice(0, Math.min(2, onlineInst.length)).map(o => o.name)
     setSelectedInstitutions(seed)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loading, institutions])
 
   const kpi = KPIS.find(k => k.key === kpiKey)!
 
@@ -100,10 +143,10 @@ export default function ComparisonPage() {
     const set = new Set<string>()
     institutions.forEach(i => { if (i.status !== 'Hors ligne') set.add(i.city) })
     return ['Toutes', ...Array.from(set).sort()]
-  }, [])
+  }, [institutions])
 
   // Eligible (online) institutions before filters — used to compute the network average
-  const online = useMemo(() => institutions.filter(i => i.status !== 'Hors ligne'), [])
+  const online = useMemo(() => institutions.filter(i => i.status !== 'Hors ligne'), [institutions])
 
   // After filters
   const filtered = useMemo(() => {
@@ -134,6 +177,19 @@ export default function ComparisonPage() {
   const bottom = ranked[ranked.length - 1]
 
   const formatVal = (v: number) => kpi.unit === '%' ? `${v.toFixed(1)}%` : `${Math.round(v)}`
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Chargement du benchmark...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
@@ -289,6 +345,7 @@ export default function ComparisonPage() {
           kpiKey={kpiKey}
           kpiLabel={kpi.label}
           kpiUnit={kpi.unit}
+          kpiHistory={kpiHistory}
           highlighted={highlighted}
           subtitle={`Tendance sur 10 mois · ${ranked.length} établissement${ranked.length > 1 ? 's' : ''} · moyenne réseau ${formatVal(networkAvg)}`}
           referenceLines={[
@@ -386,6 +443,7 @@ export default function ComparisonPage() {
           online={online}
           selected={selectedInstitutions}
           setSelected={setSelectedInstitutions}
+          kpiHistory={kpiHistory}
         />
       )}
       </div>
@@ -400,11 +458,13 @@ function CustomComparison({
   online,
   selected,
   setSelected,
+  kpiHistory,
 }: {
   highlighted: string
   online: Institution[]
   selected: string[]
   setSelected: (s: string[]) => void
+  kpiHistory: any
 }) {
   const toggleInstitution = (name: string) => {
     if (selected.includes(name)) {
@@ -567,6 +627,7 @@ function CustomComparison({
                 kpiKey={chartKpi}
                 kpiLabel={KPIS.find(s => s.key === chartKpi)!.label}
                 kpiUnit={KPIS.find(s => s.key === chartKpi)!.unit}
+                kpiHistory={kpiHistory}
                 highlighted={highlighted}
                 formatVal={(v: number) => KPIS.find(s => s.key === chartKpi)!.unit === '%' ? `${v.toFixed(1)}%` : `${Math.round(v)}`}
                 bare
@@ -646,6 +707,7 @@ function TrendChart({
   kpiKey,
   kpiLabel,
   kpiUnit,
+  kpiHistory,
   highlighted,
   formatVal,
   subtitle,
@@ -656,6 +718,7 @@ function TrendChart({
   kpiKey: KpiKey
   kpiLabel: string
   kpiUnit: '%' | 'count'
+  kpiHistory: any
   highlighted?: string
   formatVal: (v: number) => string
   subtitle?: string
@@ -666,12 +729,12 @@ function TrendChart({
     return PERIODS.map(period => {
       const row: Record<string, string | number> = { period: shortPeriod(period) }
       insts.forEach(inst => {
-        const point = kpiHistory[inst.id]?.find(p => p.period === period)
+        const point = kpiHistory[inst.id]?.find((p: any) => p.period === period)
         if (point) row[inst.name] = point[kpiKey]
       })
       return row
     })
-  }, [insts, kpiKey])
+  }, [insts, kpiKey, kpiHistory])
 
   const empty = insts.length === 0
 
@@ -787,6 +850,15 @@ function TrendChart({
   )
 }
 
+function shortPeriod(p: string) {
+  const parts = p.split('/')
+  const months: Record<string, string> = {
+    '01': 'Jan', '02': 'Fév', '03': 'Mar', '04': 'Avr', '05': 'Mai', '06': 'Juin',
+    '07': 'Juil', '08': 'Août', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Déc'
+  }
+  return months[parts[1]] || parts[1]
+}
+
 type TooltipPayloadEntry = { dataKey: string; value: number; payload: Record<string, string | number> }
 type TrendTooltipProps = {
   active?: boolean
@@ -798,35 +870,27 @@ type TrendTooltipProps = {
 }
 
 function TrendTooltip({ active, payload, label, insts, formatVal }: TrendTooltipProps) {
-  if (!active || !payload || payload.length === 0) return null
-  // Sort by descending value for readability
-  const rows = [...payload].sort((a, b) => Number(b.value) - Number(a.value))
+  if (!active || !payload || !payload.length) return null
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-xl p-3 min-w-[200px]">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{label}</p>
+    <div className="bg-white/95 backdrop-blur-sm border border-slate-100 p-3 rounded-xl shadow-xl">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pb-1 border-b border-slate-50">
+        {label}
+      </p>
       <div className="space-y-1.5">
-        {rows.map((entry, idx) => {
+        {payload.map((entry, idx) => {
           const inst = insts.find(i => i.name === entry.dataKey)
-          if (!inst) return null
-          const color = institutionAccent(inst.id)
+          const color = inst ? institutionAccent(inst.id) : '#000'
           return (
-            <div key={idx} className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-[11px] font-bold text-slate-600 flex-1">{entry.dataKey}</span>
-              <span className="text-[12px] font-black text-slate-900">{formatVal(Number(entry.value))}</span>
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-[11px] font-bold text-slate-600">{entry.dataKey}</span>
+              </div>
+              <span className="text-[11px] font-black text-slate-900">{formatVal(entry.value)}</span>
             </div>
           )
         })}
       </div>
     </div>
   )
-}
-
-function shortPeriod(period: string): string {
-  // '2025/04' → '04', but keep full form for first/last so the year is visible
-  const [year, month] = period.split('/')
-  if (period === PERIODS[0] || period === PERIODS[PERIODS.length - 1]) {
-    return `${year}/${month}`
-  }
-  return month
 }

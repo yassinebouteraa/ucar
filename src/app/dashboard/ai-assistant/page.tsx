@@ -1,7 +1,7 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout'
-import { Bot, Send, User, Sparkles, MessageSquare, Zap, BarChart3, FileText, ChevronRight } from 'lucide-react'
+import { Bot, Send, User, Sparkles, MessageSquare, Zap, BarChart3, FileText, ChevronRight, Loader2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 const ucarSuggestions = [
@@ -57,6 +57,7 @@ export default function AIAssistantPage() {
 
   const [userRole, setUserRole] = useState('UCAR')
   const [isClient, setIsClient] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -75,25 +76,46 @@ export default function AIAssistantPage() {
 
   const currentSuggestions = (userRole === 'Directeur' || userRole === 'Directeur de l\'université') ? ucarSuggestions : instSuggestions
 
-  const handleSend = () => {
-    if (!input.trim()) return
-    const userMsg: Message = { role: 'user', text: input, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    setMessages([...messages, userMsg])
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return
+    const userText = input;
+    const userMsg: Message = { role: 'user', text: userText, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages)
     setInput('')
+    setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, history: messages })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur API');
+      }
+
       const aiMsg: Message = {
         role: 'ai',
-        text: "Réponse ancrée dans les KPIs ingérés. UCARIA a retrouvé les passages pertinents et généré une synthèse vérifiée.",
+        text: data.reply,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         verdict: 'pass',
-        citations: [
-          { source: 'kpi_snapshots', period: 'Avril 2026' },
-        ],
       }
       setMessages(prev => [...prev, aiMsg])
-    }, 1000)
+    } catch (error: any) {
+      console.error(error);
+      const errorMsg: Message = {
+        role: 'ai',
+        text: `Désolé, une erreur est survenue: ${error.message}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -199,14 +221,16 @@ export default function AIAssistantPage() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Posez votre question à l'assistant..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-5 text-sm focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-inner"
+                  disabled={isLoading}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-5 text-sm focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
                 />
               </div>
               <button 
                 onClick={handleSend}
-                className="w-12 h-12 bg-cyan-500 text-white rounded-2xl flex items-center justify-center hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+                disabled={isLoading || !input.trim()}
+                className="w-12 h-12 bg-cyan-500 text-white rounded-2xl flex items-center justify-center hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Send size={20} />
+                {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
               </button>
             </div>
           </div>

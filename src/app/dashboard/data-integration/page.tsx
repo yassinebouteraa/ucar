@@ -4,6 +4,8 @@ import { useState, useRef } from 'react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Clock, CheckCircle2, AlertCircle, Upload, ArrowRight, Download, FileText, File as FileIcon, X, Loader2 } from 'lucide-react'
 import { jsPDF } from 'jspdf'
+import { supabase } from "@/lib/supabase"
+import { useEffect } from 'react'
 
 const initialImports = [
   { source: 'Scolarité — INSAT (PDF scanné)', date: '25 Avr 2026, 14:30', records: 12, status: 'Succès' },
@@ -18,6 +20,27 @@ export default function DataIntegrationPage() {
   const [imports, setImports] = useState(initialImports)
   const [isExtracting, setIsExtracting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('created_ts', { ascending: false });
+      
+      if (data) {
+        const mappedJobs = data.map(job => ({
+          source: job.payload_json?.filename || job.type,
+          date: new Date(job.created_ts).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace('.', ''),
+          records: job.payload_json?.records_count || 0,
+          status: job.status === 'completed' ? 'Succès' : job.status === 'failed' ? 'Erreur' : 'En cours'
+        }));
+        setImports(mappedJobs);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {

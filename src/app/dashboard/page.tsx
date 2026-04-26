@@ -1,8 +1,9 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout'
-import { institutions, alerts, achievements, kpiHistory, PERIODS, DOMAIN_KPI_MAP, kpiFamilies, getProcessCategories, predictions } from '@/lib/data'
-import { useState, useEffect } from 'react'
+import { institutions as mockInstitutions, alerts as mockAlerts, achievements as mockAchievements, kpiHistory, PERIODS, DOMAIN_KPI_MAP, kpiFamilies, getProcessCategories, predictions } from '@/lib/data'
+import { supabase } from "@/lib/supabase"
+import { useState, useEffect, useMemo } from 'react'
 import {
   LineChart,
   Line,
@@ -27,7 +28,10 @@ import {
   Clock,
   BookOpen,
   FileText,
-  Shield
+  Shield,
+  Check,
+  X,
+  Download
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -42,17 +46,111 @@ export default function Dashboard() {
   const [userFunction, setUserFunction] = useState('');
   const [isClient, setIsClient] = useState(false);
 
+  const [institutions, setInstitutions] = useState<any[]>(mockInstitutions);
+  const [alerts, setAlerts] = useState<any[]>(mockAlerts);
+  const [achievements, setAchievements] = useState<any[]>(mockAchievements);
+  const [loading, setLoading] = useState(true);
+  const [pendingStaff, setPendingStaff] = useState<any[]>([]);
+
+  const handleApprove = async (id: string) => {
+    try {
+      await supabase.from('users').update({ status: 'active' }).eq('id', id);
+      setPendingStaff(prev => prev.filter(u => u.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await supabase.from('users').update({ status: 'rejected' }).eq('id', id);
+      setPendingStaff(prev => prev.filter(u => u.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
-    setUserRole(localStorage.getItem('userRole') || 'Directeur');
-    setUserInstitution(localStorage.getItem('userInstitution') || '');
+    const role = localStorage.getItem('userRole') || 'Directeur UCAR';
+    const inst = localStorage.getItem('userInstitution') || '';
+
+    const loadData = async () => {
+      try {
+        // Fetch real data from Supabase
+        const [
+          { data: dbInstitutions },
+          { data: dbAlerts },
+          { data: dbAchievements },
+          { data: dbSnapshots }
+        ] = await Promise.all([
+          supabase.from('institutions').select('*'),
+          supabase.from('alerts').select('*').order('created_at', { ascending: false }).limit(10),
+          supabase.from('achievements').select('*').order('created_at', { ascending: false }).limit(5),
+          supabase.from('kpi_snapshots').select('*').order('created_at', { ascending: false })
+        ]);
+
+        let staffData: any[] = [];
+        if (role === 'Directeur UCAR' || role === 'Directeur Institut') {
+          let query = supabase.from('users').select('*').eq('status', 'pending').eq('role', 'staff');
+          if (role === 'Directeur Institut' && inst) {
+            query = query.eq('institution_id', inst);
+          }
+          const { data: staff } = await query;
+          if (staff) staffData = staff;
+
+          // Add mock request for demo
+          staffData.push({
+            id: 'demo-mock-id',
+            full_name: 'Trésorier',
+            email: 'tresorier@uca.tn',
+            role: 'staff',
+            institution_id: inst || 'inst-insat-0000-0001',
+            job_title: 'finance'
+          });
+        }
+        setPendingStaff(staffData);
+
+        if (dbInstitutions) {
+          // Merge KPI data from snapshots into institutions
+          const mergedInstitutions = dbInstitutions.map(inst => {
+            const latestSnapshot = dbSnapshots?.find(s => s.institution_id === inst.id);
+            const kpiData = latestSnapshot?.data || {};
+
+            return {
+              ...inst,
+              successRate: kpiData.success_rate || 0,
+              budgetExecution: kpiData.budget_execution || 0,
+              dropoutRate: kpiData.dropout_rate || 0,
+              employabilityRate: kpiData.employability_rate || 0,
+              absenteeismRate: kpiData.absenteeism_rate || 0,
+              publicationsCount: kpiData.publications_count || 0,
+              initials: inst.name.substring(0, 2).toUpperCase(), // Fallback initials
+              status: kpiData.status || 'Nominal',
+              color: '#F1F5F9' // Default color
+            };
+          });
+          setInstitutions(mergedInstitutions);
+        }
+        if (dbAlerts) setAlerts(dbAlerts);
+        if (dbAchievements) setAchievements(dbAchievements);
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    setUserRole(role);
+    setUserInstitution(inst);
     setUserFunction(localStorage.getItem('userFunction') || '');
+
+    loadData();
     setIsClient(true);
   }, []);
 
-  if (!isClient) return null;
-
-  const isGlobal = userRole === 'Directeur';
-  const isStaff = userRole === 'Staff';
+  const isGlobal = userRole === 'Président UCAR' || userRole === 'Directeur UCAR' || userRole === 'Directeur';
+  const isUcarPresident = userRole === 'Président UCAR' || userRole === 'Directeur UCAR';
+  const isStaff = userRole === 'Personnel administratif' || userRole === 'Staff Institut' || userRole === 'Staff';
   const staffDomainKpis = isStaff ? (DOMAIN_KPI_MAP[userFunction] || []) : [];
   const staffDomainLabel = isStaff
     ? (kpiFamilies.find(f => f.key === userFunction)?.label || userFunction)
@@ -63,9 +161,11 @@ export default function Dashboard() {
     : [institutions.find(i => i.initials === userInstitution || i.name === userInstitution) || institutions[0]];
 
   // Get institution-specific process data
-  const displayProcesses = isGlobal
+  const displayProcesses = useMemo(() => isGlobal
     ? getProcessCategories() // network-wide aggregate
-    : getProcessCategories(displayInstitutions[0].name);
+    : getProcessCategories(displayInstitutions[0].name), [isGlobal, displayInstitutions]);
+
+  if (!isClient) return null;
 
   // Aggregations
   const globalSuccessRate = (displayInstitutions.reduce((acc, curr) => acc + curr.successRate, 0) / displayInstitutions.length).toFixed(1)
@@ -107,7 +207,7 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
@@ -124,7 +224,16 @@ export default function Dashboard() {
                 <Shield size={12} /> {staffDomainLabel}
               </span>
             )}
-            <Link 
+            {isUcarPresident && (
+              <button
+                onClick={() => alert("Génération du rapport d'urgence en cours...")}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all shadow-sm"
+              >
+                <Download size={14} />
+                Export Urgent
+              </button>
+            )}
+            <Link
               href="/dashboard/reports"
               className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-sm"
             >
@@ -171,7 +280,48 @@ export default function Dashboard() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Approvals Section for Presidents */}
+        {pendingStaff.length > 0 && (
+          <div className="bg-white rounded-2xl border border-indigo-100 p-6 shadow-sm mb-6 mt-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <Shield size={20} className="text-indigo-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-slate-800">Demandes d'accès en attente</h2>
+                <p className="text-xs font-medium text-slate-500">Nouveaux membres du personnel nécessitant votre approbation</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pendingStaff.map(staff => {
+                const staffInst = institutions.find(i => i.id === staff.institution_id);
+                return (
+                  <div key={staff.id} className="bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col justify-between">
+                    <div className="mb-4">
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-bold text-slate-800">{staff.full_name}</h4>
+                        {staffInst && <span className="text-[10px] font-black text-indigo-500 uppercase">{staffInst.initials || staffInst.name}</span>}
+                      </div>
+                      <p className="text-xs font-medium text-slate-500 truncate">{staff.email}</p>
+                      {staff.job_title && <span className="inline-block mt-2 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600 uppercase tracking-widest">{staff.job_title}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mt-auto">
+                      <button onClick={() => handleApprove(staff.id)} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                        <Check size={14} /> Approuver
+                      </button>
+                      <button onClick={() => handleReject(staff.id)} className="flex-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1">
+                        <X size={14} /> Refuser
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* 2. Interactive Network Health */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
@@ -179,55 +329,60 @@ export default function Dashboard() {
                 <h2 className="text-sm font-black text-slate-800">
                   {isGlobal ? "État du Réseau (5 Établissements Pilotes)" : "État de l'Établissement"}
                 </h2>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Cliquez pour accéder au comparateur</p>
+                {isUcarPresident && (
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Cliquez pour accéder au comparateur</p>
+                )}
               </div>
-              <Link href="/dashboard/comparison" className="px-3 py-1.5 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2">
-                <BarChart2 size={14} /> Analyser
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {displayInstitutions.map(inst => (
-                <Link key={inst.id} href="/dashboard/comparison" className="block group">
-                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-center justify-between mb-4">
-                      {inst.logo ? (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-sm border border-slate-100 overflow-hidden">
-                          <img src={inst.logo} alt={`Logo ${inst.name}`} className="w-full h-full object-contain p-1" />
-                        </div>
-                      ) : (
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-slate-700 shadow-sm border border-slate-200" style={{ backgroundColor: inst.color }}>
-                          {inst.initials}
-                        </div>
-                      )}
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 ${
-                        inst.status === 'Nominal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' :
-                        inst.status === 'Attention' ? 'bg-amber-50 text-amber-600 border border-amber-200/50' :
-                        'bg-red-50 text-red-600 border border-red-200/50'
-                      }`}>
-                        {inst.status === 'Nominal' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                        {inst.status}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors">{inst.name}</h3>
-                    <p className="text-[11px] font-medium text-slate-500 mt-0.5 mb-4 truncate">{inst.type} · {inst.city}</p>
-                    
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-500 font-medium">Réussite</span>
-                        <span className="text-slate-700 font-bold">{inst.successRate}%</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div className={`h-full rounded-full transition-all duration-500 ${
-                          inst.status === 'Nominal' ? 'bg-emerald-500' :
-                          inst.status === 'Attention' ? 'bg-amber-500' :
-                          'bg-red-500'
-                        }`} style={{ width: `${inst.successRate}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
+              {isUcarPresident && (
+                <Link href="/dashboard/comparison" className="px-3 py-1.5 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 rounded-lg text-xs font-black uppercase tracking-widest transition-colors flex items-center gap-2">
+                  <BarChart2 size={14} /> Analyser
                 </Link>
-              ))}
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {displayInstitutions.map(inst => {
+                const CardWrapper: any = isUcarPresident ? Link : 'div';
+                return (
+                  <CardWrapper key={inst.id} href={isUcarPresident ? "/dashboard/comparison" : undefined} className={`block ${isUcarPresident ? 'group' : ''}`}>
+                    <div className={`bg-white p-5 rounded-2xl border border-slate-200 shadow-sm ${isUcarPresident ? 'hover:shadow-md transition-all duration-300' : ''}`}>
+                      <div className="flex items-center justify-between mb-4">
+                        {inst.logo ? (
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-sm border border-slate-100 overflow-hidden">
+                            <img src={inst.logo} alt={`Logo ${inst.name}`} className="w-full h-full object-contain p-1" />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-slate-700 shadow-sm border border-slate-200" style={{ backgroundColor: inst.color }}>
+                            {inst.initials}
+                          </div>
+                        )}
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 ${inst.status === 'Nominal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' :
+                            inst.status === 'Attention' ? 'bg-amber-50 text-amber-600 border border-amber-200/50' :
+                              'bg-red-50 text-red-600 border border-red-200/50'
+                          }`}>
+                          {inst.status === 'Nominal' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                          {inst.status}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-bold text-slate-800 group-hover:text-cyan-600 transition-colors">{inst.name}</h3>
+                      <p className="text-[11px] font-medium text-slate-500 mt-0.5 mb-4 truncate">{inst.type} · {inst.city}</p>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-slate-500 font-medium">Réussite</span>
+                          <span className="text-slate-700 font-bold">{inst.successRate}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all duration-500 ${inst.status === 'Nominal' ? 'bg-emerald-500' :
+                              inst.status === 'Attention' ? 'bg-amber-500' :
+                                'bg-red-500'
+                            }`} style={{ width: `${inst.successRate}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardWrapper>
+                )
+              })}
             </div>
           </div>
 
@@ -247,11 +402,10 @@ export default function Dashboard() {
               {alerts.filter(a => !isStaff || a.kpiFamily === userFunction).slice(0, 4).map((alert, i) => (
                 <div key={i} className="group p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-cyan-500/30 transition-all cursor-default">
                   <div className="flex items-center justify-between mb-2">
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
-                      alert.severity === 'Critique' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
-                      alert.severity === 'Attention' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                      'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    }`}>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${alert.severity === 'Critique' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                        alert.severity === 'Attention' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                          'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
                       {alert.institution}
                     </span>
                     <span className="flex items-center gap-1 text-[9px] text-slate-400 font-bold">
@@ -291,20 +445,20 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={networkTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="period" 
-                  axisLine={false} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="period"
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
                   tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 600 }}
                   domain={['dataMin - 5', 'dataMax + 5']}
                 />
-                <Tooltip 
+                <Tooltip
                   cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', fontSize: '11px', fontWeight: 'bold' }}
                   formatter={(value, name) => [`${Number(value)}%`, String(name)]}
@@ -314,15 +468,15 @@ export default function Dashboard() {
                 {displayInstitutions.filter(i => i.status !== 'Hors ligne').map((inst, index) => {
                   const FRESH_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6'];
                   return (
-                    <Line 
+                    <Line
                       key={inst.id}
-                      type="monotone" 
-                      dataKey={inst.name} 
+                      type="monotone"
+                      dataKey={inst.name}
                       name={inst.name}
-                      stroke={FRESH_COLORS[index % FRESH_COLORS.length]} 
-                      strokeWidth={3} 
+                      stroke={FRESH_COLORS[index % FRESH_COLORS.length]}
+                      strokeWidth={3}
                       dot={false}
-                      activeDot={{ r: 5, fill: FRESH_COLORS[index % FRESH_COLORS.length], stroke: '#fff', strokeWidth: 2 }} 
+                      activeDot={{ r: 5, fill: FRESH_COLORS[index % FRESH_COLORS.length], stroke: '#fff', strokeWidth: 2 }}
                     />
                   )
                 })}
@@ -347,10 +501,10 @@ export default function Dashboard() {
             </span>
           </div>
 
-          {displayProcesses.map((cat) => {
+          {displayProcesses.map((cat: any) => {
             // Staff: filter processes to only show matching domain
             const visibleProcesses = isStaff
-              ? cat.processes.filter(p => p.key === userFunction)
+              ? cat.processes.filter((p: any) => p.key === userFunction)
               : cat.processes
 
             if (visibleProcesses.length === 0) return null
@@ -361,31 +515,29 @@ export default function Dashboard() {
                   <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">{cat.category}</h3>
                 </div>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {visibleProcesses.map((process) => (
+                  {visibleProcesses.map((process: any) => (
                     <div key={process.key} className="rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all">
                       <div className="flex items-center gap-2 mb-4">
                         <span className={`text-sm font-black ${process.color}`}>{process.label}</span>
                       </div>
                       <div className="space-y-3">
-                        {process.kpis.map((kpi, idx) => (
+                        {process.kpis.map((kpi: any, idx: number) => (
                           <div key={idx} className="flex items-center justify-between">
                             <span className="text-xs text-slate-500 font-medium">{kpi.label}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-slate-800">{kpi.value}</span>
                               {kpi.trend && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  kpi.status === 'good' ? 'bg-emerald-50 text-emerald-600' :
-                                  kpi.status === 'warning' ? 'bg-amber-50 text-amber-600' :
-                                  'bg-red-50 text-red-600'
-                                }`}>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${kpi.status === 'good' ? 'bg-emerald-50 text-emerald-600' :
+                                    kpi.status === 'warning' ? 'bg-amber-50 text-amber-600' :
+                                      'bg-red-50 text-red-600'
+                                  }`}>
                                   {kpi.trend}
                                 </span>
                               )}
-                              <span className={`w-2 h-2 rounded-full ${
-                                kpi.status === 'good' ? 'bg-emerald-500' :
-                                kpi.status === 'warning' ? 'bg-amber-500' :
-                                'bg-red-500'
-                              }`} />
+                              <span className={`w-2 h-2 rounded-full ${kpi.status === 'good' ? 'bg-emerald-500' :
+                                  kpi.status === 'warning' ? 'bg-amber-500' :
+                                    'bg-red-500'
+                                }`} />
                             </div>
                           </div>
                         ))}
@@ -419,18 +571,16 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {predictions.map((pred, idx) => (
-                <div key={idx} className={`rounded-xl p-4 border transition-all hover:scale-[1.01] ${
-                  pred.risk === 'high' ? 'bg-red-500/10 border-red-500/20' :
-                  pred.risk === 'medium' ? 'bg-amber-500/10 border-amber-500/20' :
-                  'bg-emerald-500/10 border-emerald-500/20'
-                }`}>
+                <div key={idx} className={`rounded-xl p-4 border transition-all hover:scale-[1.01] ${pred.risk === 'high' ? 'bg-red-500/10 border-red-500/20' :
+                    pred.risk === 'medium' ? 'bg-amber-500/10 border-amber-500/20' :
+                      'bg-emerald-500/10 border-emerald-500/20'
+                  }`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${
-                        pred.risk === 'high' ? 'bg-red-500/20 text-red-300' :
-                        pred.risk === 'medium' ? 'bg-amber-500/20 text-amber-300' :
-                        'bg-emerald-500/20 text-emerald-300'
-                      }`}>
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${pred.risk === 'high' ? 'bg-red-500/20 text-red-300' :
+                          pred.risk === 'medium' ? 'bg-amber-500/20 text-amber-300' :
+                            'bg-emerald-500/20 text-emerald-300'
+                        }`}>
                         {pred.risk === 'high' ? 'Risque Élevé' : pred.risk === 'medium' ? 'Risque Moyen' : 'Tendance Positive'}
                       </span>
                       <span className="text-[9px] font-bold text-slate-400">{pred.institution}</span>
@@ -440,9 +590,8 @@ export default function Dashboard() {
                   <p className="text-xs font-medium text-slate-300 leading-relaxed mb-3">{pred.prediction}</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${
-                        pred.risk === 'high' ? 'bg-red-500' : pred.risk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`} style={{ width: `${pred.confidence}%` }} />
+                      <div className={`h-full rounded-full ${pred.risk === 'high' ? 'bg-red-500' : pred.risk === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                        }`} style={{ width: `${pred.confidence}%` }} />
                     </div>
                     <span className="text-[10px] font-black text-slate-400">{pred.confidence}% confiance</span>
                   </div>
@@ -457,7 +606,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
             <h2 className="text-sm font-black text-slate-800 mb-1">Palmarès des Performances</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Établissements remarquables ce mois-ci</p>
-            
+
             <div className="space-y-3">
               {topPerformers.map((inst, idx) => (
                 <div key={inst.id} className="flex items-center gap-4 p-3 rounded-xl bg-emerald-50/30 border border-emerald-100">
@@ -480,14 +629,16 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm flex flex-col justify-center">
             <h2 className="text-sm font-black text-slate-800 mb-1">Actions Rapides</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Outils d'aide à la décision</p>
-            
+
             <div className="grid grid-cols-2 gap-3">
-              <Link href="/dashboard/comparison" className="p-4 rounded-xl border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50 transition-all group">
-                <BarChart2 size={24} className="text-cyan-600 mb-3 group-hover:scale-110 transition-transform" />
-                <h3 className="text-xs font-black text-slate-800">Comparateur</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Analyser les écarts</p>
-              </Link>
-              
+              {isUcarPresident && (
+                <Link href="/dashboard/comparison" className="p-4 rounded-xl border border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50 transition-all group">
+                  <BarChart2 size={24} className="text-cyan-600 mb-3 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xs font-black text-slate-800">Comparateur</h3>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Analyser les écarts</p>
+                </Link>
+              )}
+
               <Link href="/dashboard/reports" className="p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all group">
                 <FileText size={24} className="text-indigo-600 mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xs font-black text-slate-800">Rapports</h3>
@@ -499,7 +650,7 @@ export default function Dashboard() {
                 <h3 className="text-xs font-black text-slate-800">Assistant IA</h3>
                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Diagnostic intelligent</p>
               </Link>
-              
+
               <Link href="/dashboard/data-integration" className="p-4 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all group">
                 <ArrowRight size={24} className="text-amber-600 mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xs font-black text-slate-800">Ingestion</h3>

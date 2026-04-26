@@ -1,16 +1,64 @@
 'use client'
 
 import DashboardLayout from '@/components/DashboardLayout'
-import { institutions, achievements } from '@/lib/data'
+import {
+  institutions as mockInstitutions,
+  achievements,
+  Institution,
+} from '@/lib/data'
+import { supabase } from '@/lib/supabase'
 import { Search, MapPin, Eye, AlertCircle, Trophy, Scale } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function InstitutionsPage() {
   const [filter, setFilter] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [dbInstitutions, setDbInstitutions] = useState<Institution[]>([])
 
-  const filteredInstitutions = institutions.filter(inst => {
+  useEffect(() => {
+    const loadInstitutions = async () => {
+      try {
+        const [
+          { data: institutions },
+          { data: snapshots }
+        ] = await Promise.all([
+          supabase.from('institutions').select('*'),
+          supabase.from('kpi_snapshots').select('*').order('created_at', { ascending: false })
+        ]);
+
+        if (institutions) {
+          const merged = institutions.map(inst => {
+            const latest = snapshots?.find(s => s.institution_id === inst.id);
+            const kpiData = latest?.data || {};
+            return {
+              ...inst,
+              successRate: kpiData.success_rate || 0,
+              budgetExecution: kpiData.budget_execution || 0,
+              dropoutRate: kpiData.dropout_rate || 0,
+              employabilityRate: kpiData.employability_rate || 0,
+              absenteeismRate: kpiData.absenteeism_rate || 0,
+              publicationsCount: kpiData.publications_count || 0,
+              initials: inst.name.substring(0, 2).toUpperCase(),
+              status: kpiData.status || 'Nominal',
+              color: '#F1F5F9'
+            };
+          });
+          setDbInstitutions(merged);
+        }
+      } catch (err) {
+        console.error("Error loading institutions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInstitutions();
+  }, []);
+
+  const institutionsToDisplay = dbInstitutions.length > 0 ? dbInstitutions : mockInstitutions
+
+  const filteredInstitutions = institutionsToDisplay.filter(inst => {
     const matchesFilter = filter === 'All' || inst.status === filter
     const matchesSearch = 
       inst.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -20,6 +68,19 @@ export default function InstitutionsPage() {
     return matchesFilter && matchesSearch
   })
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Initialisation du réseau...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6">
@@ -28,7 +89,7 @@ export default function InstitutionsPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black text-slate-900">Établissements</h1>
             <span className="bg-cyan-100 text-cyan-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-cyan-200">
-              {institutions.length} démo · 30+ rattachés
+              {institutionsToDisplay.length} démo · 30+ rattachés
             </span>
           </div>
           

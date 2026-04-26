@@ -163,7 +163,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 40, damping: 20, delay: 0.2 }}
-              src="/page vid.mp4"
+              src="/page%20vid.mp4"
               autoPlay
               loop
               muted
@@ -184,9 +184,9 @@ export default function LandingPage() {
             >
               <span className="text-sm font-bold text-slate-800">Institutions Connectées</span>
               <div className="flex -space-x-3 mt-1">
-                <img src="https://i.pravatar.cc/100?img=1" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 1" />
-                <img src="https://i.pravatar.cc/100?img=2" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 2" />
-                <img src="https://i.pravatar.cc/100?img=3" className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User 3" />
+                <img src="/logos/enstab.jpg" className="w-10 h-10 rounded-full border-2 border-white object-cover bg-white" alt="ENSTAB" title="ENSTAB" />
+                <img src="/logos/supcom.svg" className="w-10 h-10 rounded-full border-2 border-white object-contain bg-white p-1" alt="SUP'COM" title="SUP'COM" />
+                <img src="/logos/ihec.jpg" className="w-10 h-10 rounded-full border-2 border-white object-cover bg-white" alt="IHEC" title="IHEC" />
                 <div className="w-10 h-10 rounded-full border-2 border-white bg-cyan-500 flex items-center justify-center text-white text-[11px] font-bold">+30</div>
               </div>
             </motion.div>

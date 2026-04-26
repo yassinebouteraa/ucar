@@ -47,9 +47,9 @@ export type BudgetMonth = {
 
 export const institutions: Institution[] = [
   {
-    id: '1',
-    name: 'ENSTAB',
-    city: 'Borj Cédria',
+    id: 'inst-insat-0000-0000-000000000000',
+    name: 'INSAT',
+    city: 'Tunis',
     type: 'École',
     university: 'Université de Carthage',
     successRate: 88,
@@ -59,16 +59,16 @@ export const institutions: Institution[] = [
     absenteeismRate: 3.1,
     publicationsCount: 42,
     status: 'Nominal',
-    initials: 'EN',
+    initials: 'IN',
     color: '#CFFAFE',
-    logo: '/enstab-logo.jpg',
+    logo: '/logos/insat.svg',
     story: 'Référence du réseau — meilleur taux d\'insertion professionnelle, recherche soutenue, finances saines.',
   },
   {
-    id: '2',
-    name: 'ISSTE',
-    city: 'Borj Cédria',
-    type: 'Institut',
+    id: 'inst-enit-00000-0000-000000000000',
+    name: 'ENIT',
+    city: 'Tunis',
+    type: 'École',
     university: 'Université de Carthage',
     successRate: 84,
     budgetExecution: 47,
@@ -77,16 +77,16 @@ export const institutions: Institution[] = [
     absenteeismRate: 5.4,
     publicationsCount: 28,
     status: 'Attention',
-    initials: 'IE',
+    initials: 'ET',
     color: '#EFF6FF',
-    logo: '/isste-logo.png',
+    logo: '/logos/enit.png',
     story: 'Excellents résultats académiques mais 47% d\'exécution budgétaire — équipement IT en dégradation.',
   },
   {
-    id: '3',
-    name: 'ISTIC',
-    city: 'Borj Cédria',
-    type: 'Institut',
+    id: 'inst-esprit-000-0000-000000000000',
+    name: 'ESPRIT',
+    city: 'Tunis',
+    type: 'École',
     university: 'Université de Carthage',
     successRate: 64,
     budgetExecution: 71,
@@ -95,31 +95,31 @@ export const institutions: Institution[] = [
     absenteeismRate: 13.0,
     publicationsCount: 9,
     status: 'Critique',
-    initials: 'IC',
+    initials: 'ES',
     color: '#FFF7ED',
-    logo: '/logos/istic.svg',
+    logo: '/logos/esprit.svg',
     story: 'Crise RH — absentéisme à 13%, formation à 29%. Résultats académiques en baisse chaque semestre.',
   },
   {
-    id: '4',
-    name: "SUP'COM",
-    city: 'Ariana',
-    type: 'École',
+    id: 'inst-isg-00000-0000-000000000000',
+    name: 'ISG',
+    city: 'Tunis',
+    type: 'Institut',
     university: 'Université de Carthage',
-    successRate: 62,
-    budgetExecution: 68,
-    dropoutRate: 28.0,
-    employabilityRate: 67,
-    absenteeismRate: 6.8,
-    publicationsCount: 16,
-    status: 'Critique',
-    initials: 'SC',
-    color: '#FEE2E2',
-    logo: '/logos/supcom.svg',
-    story: 'Crise abandon — taux passé de 19% à 28% en 3 semestres. Assiduité en chute.',
+    successRate: 72,
+    budgetExecution: 85,
+    dropoutRate: 3.5,
+    employabilityRate: 81,
+    absenteeismRate: 2.8,
+    publicationsCount: 24,
+    status: 'Nominal',
+    initials: 'IS',
+    color: '#F0FDFA',
+    logo: '/logos/isg.png',
+    story: 'Gestion équilibrée. Bonne insertion professionnelle des diplômés en gestion.',
   },
   {
-    id: '5',
+    id: 'inst-ihec-0000-0000-000000000000',
     name: 'IHEC',
     city: 'Carthage',
     type: 'Institut',
@@ -266,10 +266,10 @@ export type ProcessCategory = {
 // Each institution has unique, realistic KPI values derived from their profile
 const _instProcessData: Record<string, ProcessCategory[]> = {
   'ENSTAB': _buildProcesses(3200, 88, 92, 4.2, 91, 22, 82, 78, 12, 6),
-  'ISSTE':  _buildProcesses(2100, 84, 61, 7.1, 85, 14, 74, 65, 8, 3),
-  'ISTIC':  _buildProcesses(1850, 64, 47, 13.2, 72, 8, 58, 52, 5, 1),
+  'ISSTE': _buildProcesses(2100, 84, 61, 7.1, 85, 14, 74, 65, 8, 3),
+  'ISTIC': _buildProcesses(1850, 64, 47, 13.2, 72, 8, 58, 52, 5, 1),
   "SUP'COM": _buildProcesses(2800, 52, 38, 28.1, 68, 4, 45, 41, 3, 0),
-  'IHEC':   _buildProcesses(2530, 72, 55, 0, 78, 11, 66, 60, 7, 2),
+  'IHEC': _buildProcesses(2530, 72, 55, 0, 78, 11, 66, 60, 7, 2),
 }
 
 function _s(v: number): ProcessStatus { return v >= 75 ? 'good' : v >= 50 ? 'warning' : 'critical' }
@@ -295,93 +295,133 @@ function _buildProcesses(
   const recyclage = Math.round(30 + budgetExec * 0.12)
   const carbone = Math.round(80 + students * 0.02)
   return [
-    { category: 'Enseignement & Formation', processes: [
-      { key: 'enrollment', label: 'Inscription', icon: 'UserPlus', color: 'text-cyan-600', kpis: [
-        { label: 'Étudiants inscrits', value: students.toLocaleString('fr'), trend: '+' + (Math.round(newEnroll / students * 100 * 10) / 10) + '%', trendUp: true, status: 'good' as ProcessStatus },
-        { label: 'Taux de réinscription', value: reinscription + '%', status: _s(reinscription) },
-        { label: 'Nouvelles inscriptions', value: newEnroll.toLocaleString('fr'), status: 'good' as ProcessStatus },
-      ]},
-      { key: 'exams', label: 'Examens', icon: 'ClipboardCheck', color: 'text-blue-600', kpis: [
-        { label: 'Sessions planifiées', value: `${Math.round(successR * 0.55)}/52`, status: _s(successR) },
-        { label: 'Taux de réussite global', value: successR + '%', trend: successR > 70 ? '+2.4%' : '-1.8%', trendUp: successR > 70, status: _s(successR) },
-        { label: 'Taux de redoublement', value: redoub + '%', status: redoub < 8 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-      ]},
-      { key: 'pedagogy', label: 'Pédagogie', icon: 'BookOpen', color: 'text-indigo-600', kpis: [
-        { label: 'Programmes révisés', value: `${Math.round(pedagSat * 0.24)}/24`, status: _s(pedagSat) },
-        { label: 'Satisfaction pédagogique', value: pedagSat + '%', trend: pedagSat > 65 ? '+3%' : '-2%', trendUp: pedagSat > 65, status: _s(pedagSat) },
-        { label: 'Progression semestrielle', value: Math.round(pedagSat * 1.05) + '%', status: _s(pedagSat) },
-      ]},
-    ]},
-    { category: 'Stratégie & Vie Étudiante', processes: [
-      { key: 'strategy', label: 'Stratégie', icon: 'Target', color: 'text-violet-600', kpis: [
-        { label: 'Objectifs atteints', value: Math.round(budgetExec * 0.95) + '%', status: _s(Math.round(budgetExec * 0.95)) },
-        { label: "Plans d'action en cours", value: String(Math.round(partnerships * 1.1)), status: 'good' as ProcessStatus },
-        { label: "Taux d'exécution", value: Math.round(budgetExec * 1.05) + '%', trend: '+5%', trendUp: true, status: _s(budgetExec) },
-      ]},
-      { key: 'partnerships', label: 'Partenariats', icon: 'Handshake', color: 'text-pink-600', kpis: [
-        { label: 'Accords actifs', value: String(partnerships), trend: '+' + Math.round(partnerships * 0.15), trendUp: true, status: 'good' as ProcessStatus },
-        { label: 'Mobilité entrante/sortante', value: String(Math.round(partnerships * 14)), status: 'good' as ProcessStatus },
-        { label: 'Projets internationaux', value: String(Math.round(partnerships * 0.9)), status: 'good' as ProcessStatus },
-      ]},
-      { key: 'studentLife', label: 'Vie Étudiante', icon: 'Heart', color: 'text-rose-600', kpis: [
-        { label: 'Clubs & associations', value: String(clubs), status: 'good' as ProcessStatus },
-        { label: 'Événements / semestre', value: String(events), trend: '+' + Math.round(events * 0.2), trendUp: true, status: 'good' as ProcessStatus },
-        { label: 'Satisfaction campus', value: Math.round(pedagSat * 0.9) + '%', status: _s(Math.round(pedagSat * 0.9)) },
-      ]},
-    ]},
-    { category: 'Finance & Ressources Humaines', processes: [
-      { key: 'finance', label: 'Finance', icon: 'Wallet', color: 'text-emerald-600', kpis: [
-        { label: 'Budget alloué vs consommé', value: budgetExec + '%', status: _s(budgetExec) },
-        { label: 'Coût par étudiant', value: costPerStudent.toLocaleString('fr') + ' TND', status: _s(budgetExec) },
-        { label: 'Dépenses par département', value: budgetExec > 60 ? 'Réparties' : 'Concentrées', status: _s(budgetExec) },
-      ]},
-      { key: 'hr', label: 'Ressources Humaines', icon: 'Users', color: 'text-amber-600', kpis: [
-        { label: 'Effectif enseignant/admin', value: `${staffEns} / ${staffAdm}`, status: 'good' as ProcessStatus },
-        { label: "Taux d'absentéisme", value: absentRate + '%', trend: (absentRate < 8 ? '-0.3%' : '+1.2%'), trendUp: false, status: absentRate < 8 ? 'good' as ProcessStatus : absentRate < 12 ? 'warning' as ProcessStatus : 'critical' as ProcessStatus },
-        { label: 'Stabilité des équipes', value: Math.round(100 - absentRate * 1.1) + '%', status: _s(Math.round(100 - absentRate * 1.1)) },
-      ]},
-      { key: 'training', label: 'Formation', icon: 'GraduationCap', color: 'text-cyan-700', kpis: [
-        { label: 'Formations suivies', value: String(formations), trend: '+' + Math.round(formations * 0.15), trendUp: true, status: 'good' as ProcessStatus },
-        { label: 'Charge enseignante moy.', value: Math.round(14 + absentRate * 0.3) + 'h/sem', status: _s(80) },
-        { label: 'Certifications obtenues', value: String(certif), status: 'good' as ProcessStatus },
-      ]},
-    ]},
-    { category: 'Recherche & Infrastructure', processes: [
-      { key: 'research', label: 'Recherche', icon: 'Microscope', color: 'text-violet-600', kpis: [
-        { label: 'Publications', value: String(publications), trend: '+' + Math.round(publications * 0.2), trendUp: true, status: _s(publications > 10 ? 80 : 50) },
-        { label: 'Projets actifs', value: String(projetsRecherche), status: 'good' as ProcessStatus },
-        { label: 'Financement obtenu', value: financement + 'M TND', status: 'good' as ProcessStatus },
-        { label: 'Brevets déposés', value: String(patents), status: patents > 0 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-      ]},
-      { key: 'infrastructure', label: 'Infrastructure', icon: 'Building', color: 'text-orange-600', kpis: [
-        { label: "Taux d'occupation salles", value: occupation + '%', status: _s(occupation) },
-        { label: 'État équipement IT', value: Math.round(occupation * 0.82) + '%', trend: occupation > 70 ? '+2%' : '-4%', trendUp: occupation > 70, status: _s(Math.round(occupation * 0.82)) },
-        { label: 'Travaux en cours', value: String(Math.round((100 - occupation) / 15)), status: occupation > 70 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-      ]},
-      { key: 'equipment', label: 'Équipement', icon: 'Monitor', color: 'text-slate-600', kpis: [
-        { label: 'Disponibilité matériel', value: Math.round(occupation * 1.05) + '%', status: _s(Math.round(occupation * 1.05)) },
-        { label: 'Équipements critiques', value: Math.round((100 - occupation) / 5) + ' à remplacer', status: occupation > 70 ? 'warning' as ProcessStatus : 'critical' as ProcessStatus },
-        { label: 'Budget maintenance', value: Math.round(budgetExec * 0.6) + '% utilisé', status: _s(budgetExec) },
-      ]},
-    ]},
-    { category: 'Logistique & Développement Durable', processes: [
-      { key: 'inventory', label: 'Inventaire', icon: 'Package', color: 'text-amber-700', kpis: [
-        { label: 'Références suivies', value: refs.toLocaleString('fr'), status: 'good' as ProcessStatus },
-        { label: 'Dernière mise à jour', value: budgetExec > 60 ? 'Il y a 5j' : 'Il y a 21j', status: budgetExec > 60 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-        { label: 'Écarts détectés', value: String(ecarts), status: ecarts < 10 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-      ]},
-      { key: 'esg', label: 'ESG / RSE', icon: 'Leaf', color: 'text-teal-600', kpis: [
-        { label: 'Consommation énergie', value: (budgetExec > 60 ? '-8%' : '+3%') + ' vs N-1', trend: budgetExec > 60 ? '-8%' : '+3%', trendUp: false, status: budgetExec > 60 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
-        { label: 'Empreinte carbone', value: carbone + ' tCO₂e', status: 'warning' as ProcessStatus },
-        { label: 'Taux de recyclage', value: recyclage + '%', trend: '+6%', trendUp: true, status: _s(recyclage) },
-        { label: 'Accessibilité campus', value: Math.round(occupation * 0.78) + '%', status: _s(Math.round(occupation * 0.78)) },
-      ]},
-      { key: 'logistics', label: 'Logistique', icon: 'Truck', color: 'text-gray-600', kpis: [
-        { label: 'Transport planifié', value: Math.round(budgetExec * 1.3) + '%', status: _s(Math.round(budgetExec * 1.3)) },
-        { label: 'Restauration satisfaction', value: Math.round(pedagSat * 0.87) + '%', status: _s(Math.round(pedagSat * 0.87)) },
-        { label: 'Mobilité durable', value: Math.round(recyclage * 0.7) + '%', trend: '+5%', trendUp: true, status: 'warning' as ProcessStatus },
-      ]},
-    ]},
+    {
+      category: 'Enseignement & Formation', processes: [
+        {
+          key: 'enrollment', label: 'Inscription', icon: 'UserPlus', color: 'text-cyan-600', kpis: [
+            { label: 'Étudiants inscrits', value: students.toLocaleString('fr'), trend: '+' + (Math.round(newEnroll / students * 100 * 10) / 10) + '%', trendUp: true, status: 'good' as ProcessStatus },
+            { label: 'Taux de réinscription', value: reinscription + '%', status: _s(reinscription) },
+            { label: 'Nouvelles inscriptions', value: newEnroll.toLocaleString('fr'), status: 'good' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'exams', label: 'Examens', icon: 'ClipboardCheck', color: 'text-blue-600', kpis: [
+            { label: 'Sessions planifiées', value: `${Math.round(successR * 0.55)}/52`, status: _s(successR) },
+            { label: 'Taux de réussite global', value: successR + '%', trend: successR > 70 ? '+2.4%' : '-1.8%', trendUp: successR > 70, status: _s(successR) },
+            { label: 'Taux de redoublement', value: redoub + '%', status: redoub < 8 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'pedagogy', label: 'Pédagogie', icon: 'BookOpen', color: 'text-indigo-600', kpis: [
+            { label: 'Programmes révisés', value: `${Math.round(pedagSat * 0.24)}/24`, status: _s(pedagSat) },
+            { label: 'Satisfaction pédagogique', value: pedagSat + '%', trend: pedagSat > 65 ? '+3%' : '-2%', trendUp: pedagSat > 65, status: _s(pedagSat) },
+            { label: 'Progression semestrielle', value: Math.round(pedagSat * 1.05) + '%', status: _s(pedagSat) },
+          ]
+        },
+      ]
+    },
+    {
+      category: 'Stratégie & Vie Étudiante', processes: [
+        {
+          key: 'strategy', label: 'Stratégie', icon: 'Target', color: 'text-violet-600', kpis: [
+            { label: 'Objectifs atteints', value: Math.round(budgetExec * 0.95) + '%', status: _s(Math.round(budgetExec * 0.95)) },
+            { label: "Plans d'action en cours", value: String(Math.round(partnerships * 1.1)), status: 'good' as ProcessStatus },
+            { label: "Taux d'exécution", value: Math.round(budgetExec * 1.05) + '%', trend: '+5%', trendUp: true, status: _s(budgetExec) },
+          ]
+        },
+        {
+          key: 'partnerships', label: 'Partenariats', icon: 'Handshake', color: 'text-pink-600', kpis: [
+            { label: 'Accords actifs', value: String(partnerships), trend: '+' + Math.round(partnerships * 0.15), trendUp: true, status: 'good' as ProcessStatus },
+            { label: 'Mobilité entrante/sortante', value: String(Math.round(partnerships * 14)), status: 'good' as ProcessStatus },
+            { label: 'Projets internationaux', value: String(Math.round(partnerships * 0.9)), status: 'good' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'studentLife', label: 'Vie Étudiante', icon: 'Heart', color: 'text-rose-600', kpis: [
+            { label: 'Clubs & associations', value: String(clubs), status: 'good' as ProcessStatus },
+            { label: 'Événements / semestre', value: String(events), trend: '+' + Math.round(events * 0.2), trendUp: true, status: 'good' as ProcessStatus },
+            { label: 'Satisfaction campus', value: Math.round(pedagSat * 0.9) + '%', status: _s(Math.round(pedagSat * 0.9)) },
+          ]
+        },
+      ]
+    },
+    {
+      category: 'Finance & Ressources Humaines', processes: [
+        {
+          key: 'finance', label: 'Finance', icon: 'Wallet', color: 'text-emerald-600', kpis: [
+            { label: 'Budget alloué vs consommé', value: budgetExec + '%', status: _s(budgetExec) },
+            { label: 'Coût par étudiant', value: costPerStudent.toLocaleString('fr') + ' TND', status: _s(budgetExec) },
+            { label: 'Dépenses par département', value: budgetExec > 60 ? 'Réparties' : 'Concentrées', status: _s(budgetExec) },
+          ]
+        },
+        {
+          key: 'hr', label: 'Ressources Humaines', icon: 'Users', color: 'text-amber-600', kpis: [
+            { label: 'Effectif enseignant/admin', value: `${staffEns} / ${staffAdm}`, status: 'good' as ProcessStatus },
+            { label: "Taux d'absentéisme", value: absentRate + '%', trend: (absentRate < 8 ? '-0.3%' : '+1.2%'), trendUp: false, status: absentRate < 8 ? 'good' as ProcessStatus : absentRate < 12 ? 'warning' as ProcessStatus : 'critical' as ProcessStatus },
+            { label: 'Stabilité des équipes', value: Math.round(100 - absentRate * 1.1) + '%', status: _s(Math.round(100 - absentRate * 1.1)) },
+          ]
+        },
+        {
+          key: 'training', label: 'Formation', icon: 'GraduationCap', color: 'text-cyan-700', kpis: [
+            { label: 'Formations suivies', value: String(formations), trend: '+' + Math.round(formations * 0.15), trendUp: true, status: 'good' as ProcessStatus },
+            { label: 'Charge enseignante moy.', value: Math.round(14 + absentRate * 0.3) + 'h/sem', status: _s(80) },
+            { label: 'Certifications obtenues', value: String(certif), status: 'good' as ProcessStatus },
+          ]
+        },
+      ]
+    },
+    {
+      category: 'Recherche & Infrastructure', processes: [
+        {
+          key: 'research', label: 'Recherche', icon: 'Microscope', color: 'text-violet-600', kpis: [
+            { label: 'Publications', value: String(publications), trend: '+' + Math.round(publications * 0.2), trendUp: true, status: _s(publications > 10 ? 80 : 50) },
+            { label: 'Projets actifs', value: String(projetsRecherche), status: 'good' as ProcessStatus },
+            { label: 'Financement obtenu', value: financement + 'M TND', status: 'good' as ProcessStatus },
+            { label: 'Brevets déposés', value: String(patents), status: patents > 0 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'infrastructure', label: 'Infrastructure', icon: 'Building', color: 'text-orange-600', kpis: [
+            { label: "Taux d'occupation salles", value: occupation + '%', status: _s(occupation) },
+            { label: 'État équipement IT', value: Math.round(occupation * 0.82) + '%', trend: occupation > 70 ? '+2%' : '-4%', trendUp: occupation > 70, status: _s(Math.round(occupation * 0.82)) },
+            { label: 'Travaux en cours', value: String(Math.round((100 - occupation) / 15)), status: occupation > 70 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'equipment', label: 'Équipement', icon: 'Monitor', color: 'text-slate-600', kpis: [
+            { label: 'Disponibilité matériel', value: Math.round(occupation * 1.05) + '%', status: _s(Math.round(occupation * 1.05)) },
+            { label: 'Équipements critiques', value: Math.round((100 - occupation) / 5) + ' à remplacer', status: occupation > 70 ? 'warning' as ProcessStatus : 'critical' as ProcessStatus },
+            { label: 'Budget maintenance', value: Math.round(budgetExec * 0.6) + '% utilisé', status: _s(budgetExec) },
+          ]
+        },
+      ]
+    },
+    {
+      category: 'Logistique & Développement Durable', processes: [
+        {
+          key: 'inventory', label: 'Inventaire', icon: 'Package', color: 'text-amber-700', kpis: [
+            { label: 'Références suivies', value: refs.toLocaleString('fr'), status: 'good' as ProcessStatus },
+            { label: 'Dernière mise à jour', value: budgetExec > 60 ? 'Il y a 5j' : 'Il y a 21j', status: budgetExec > 60 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+            { label: 'Écarts détectés', value: String(ecarts), status: ecarts < 10 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+          ]
+        },
+        {
+          key: 'esg', label: 'ESG / RSE', icon: 'Leaf', color: 'text-teal-600', kpis: [
+            { label: 'Consommation énergie', value: (budgetExec > 60 ? '-8%' : '+3%') + ' vs N-1', trend: budgetExec > 60 ? '-8%' : '+3%', trendUp: false, status: budgetExec > 60 ? 'good' as ProcessStatus : 'warning' as ProcessStatus },
+            { label: 'Empreinte carbone', value: carbone + ' tCO₂e', status: 'warning' as ProcessStatus },
+            { label: 'Taux de recyclage', value: recyclage + '%', trend: '+6%', trendUp: true, status: _s(recyclage) },
+            { label: 'Accessibilité campus', value: Math.round(occupation * 0.78) + '%', status: _s(Math.round(occupation * 0.78)) },
+          ]
+        },
+        {
+          key: 'logistics', label: 'Logistique', icon: 'Truck', color: 'text-gray-600', kpis: [
+            { label: 'Transport planifié', value: Math.round(budgetExec * 1.3) + '%', status: _s(Math.round(budgetExec * 1.3)) },
+            { label: 'Restauration satisfaction', value: Math.round(pedagSat * 0.87) + '%', status: _s(Math.round(pedagSat * 0.87)) },
+            { label: 'Mobilité durable', value: Math.round(recyclage * 0.7) + '%', trend: '+5%', trendUp: true, status: 'warning' as ProcessStatus },
+          ]
+        },
+      ]
+    },
   ]
 }
 
@@ -501,36 +541,36 @@ type StoryConfig = Partial<Record<HistoryKpi, { start: number; jitter: number }>
 
 const STORIES: Record<string, StoryConfig> = {
   ENSTAB: {
-    successRate:       { start: 83,  jitter: 0.6 },
-    dropoutRate:       { start: 5.4, jitter: 0.4 },
-    budgetExecution:   { start: 88,  jitter: 1.2 },
-    employabilityRate: { start: 79,  jitter: 0.7 },
-    absenteeismRate:   { start: 3.6, jitter: 0.3 },
-    publicationsCount: { start: 30,  jitter: 1.6 },
+    successRate: { start: 83, jitter: 0.6 },
+    dropoutRate: { start: 5.4, jitter: 0.4 },
+    budgetExecution: { start: 88, jitter: 1.2 },
+    employabilityRate: { start: 79, jitter: 0.7 },
+    absenteeismRate: { start: 3.6, jitter: 0.3 },
+    publicationsCount: { start: 30, jitter: 1.6 },
   },
   ISSTE: {
-    successRate:       { start: 82,  jitter: 0.8 },
-    dropoutRate:       { start: 5.2, jitter: 0.4 },
-    budgetExecution:   { start: 60,  jitter: 1.5 }, // declining → 47
-    employabilityRate: { start: 76,  jitter: 0.7 },
-    absenteeismRate:   { start: 4.8, jitter: 0.4 },
-    publicationsCount: { start: 20,  jitter: 1.4 }, // recherche active
+    successRate: { start: 82, jitter: 0.8 },
+    dropoutRate: { start: 5.2, jitter: 0.4 },
+    budgetExecution: { start: 60, jitter: 1.5 }, // declining → 47
+    employabilityRate: { start: 76, jitter: 0.7 },
+    absenteeismRate: { start: 4.8, jitter: 0.4 },
+    publicationsCount: { start: 20, jitter: 1.4 }, // recherche active
   },
   ISTIC: {
-    successRate:       { start: 70,  jitter: 0.9 }, // declining → 64
-    dropoutRate:       { start: 8.6, jitter: 0.5 },
-    budgetExecution:   { start: 75,  jitter: 1.3 },
-    employabilityRate: { start: 62,  jitter: 0.8 },
-    absenteeismRate:   { start: 7,   jitter: 0.5 }, // crisis → 13
-    publicationsCount: { start: 10,  jitter: 0.8 },
+    successRate: { start: 70, jitter: 0.9 }, // declining → 64
+    dropoutRate: { start: 8.6, jitter: 0.5 },
+    budgetExecution: { start: 75, jitter: 1.3 },
+    employabilityRate: { start: 62, jitter: 0.8 },
+    absenteeismRate: { start: 7, jitter: 0.5 }, // crisis → 13
+    publicationsCount: { start: 10, jitter: 0.8 },
   },
   "SUP'COM": {
-    successRate:       { start: 72,  jitter: 0.9 }, // declining → 62
-    dropoutRate:       { start: 19,  jitter: 0.6 }, // 3-semester crisis → 28
-    budgetExecution:   { start: 71,  jitter: 1.2 },
-    employabilityRate: { start: 70,  jitter: 0.7 },
-    absenteeismRate:   { start: 5.9, jitter: 0.4 },
-    publicationsCount: { start: 12,  jitter: 1.0 },
+    successRate: { start: 72, jitter: 0.9 }, // declining → 62
+    dropoutRate: { start: 19, jitter: 0.6 }, // 3-semester crisis → 28
+    budgetExecution: { start: 71, jitter: 1.2 },
+    employabilityRate: { start: 70, jitter: 0.7 },
+    absenteeismRate: { start: 5.9, jitter: 0.4 },
+    publicationsCount: { start: 12, jitter: 1.0 },
   },
 }
 
@@ -545,21 +585,21 @@ function buildHistory(): Record<string, KpiHistoryPoint[]> {
     const seedBase = (idx + 1) * 1000
 
     const series: Record<HistoryKpi, number[]> = {
-      successRate:       genRamp(cfg.successRate?.start       ?? inst.successRate,       inst.successRate,       PERIODS.length, seedBase + 1, cfg.successRate?.jitter       ?? 1.0),
-      dropoutRate:       genRamp(cfg.dropoutRate?.start       ?? inst.dropoutRate,       inst.dropoutRate,       PERIODS.length, seedBase + 2, cfg.dropoutRate?.jitter       ?? 0.4),
-      budgetExecution:   genRamp(cfg.budgetExecution?.start   ?? inst.budgetExecution,   inst.budgetExecution,   PERIODS.length, seedBase + 3, cfg.budgetExecution?.jitter   ?? 1.2),
+      successRate: genRamp(cfg.successRate?.start ?? inst.successRate, inst.successRate, PERIODS.length, seedBase + 1, cfg.successRate?.jitter ?? 1.0),
+      dropoutRate: genRamp(cfg.dropoutRate?.start ?? inst.dropoutRate, inst.dropoutRate, PERIODS.length, seedBase + 2, cfg.dropoutRate?.jitter ?? 0.4),
+      budgetExecution: genRamp(cfg.budgetExecution?.start ?? inst.budgetExecution, inst.budgetExecution, PERIODS.length, seedBase + 3, cfg.budgetExecution?.jitter ?? 1.2),
       employabilityRate: genRamp(cfg.employabilityRate?.start ?? inst.employabilityRate, inst.employabilityRate, PERIODS.length, seedBase + 4, cfg.employabilityRate?.jitter ?? 0.8),
-      absenteeismRate:   genRamp(cfg.absenteeismRate?.start   ?? inst.absenteeismRate,   inst.absenteeismRate,   PERIODS.length, seedBase + 5, cfg.absenteeismRate?.jitter   ?? 0.4),
+      absenteeismRate: genRamp(cfg.absenteeismRate?.start ?? inst.absenteeismRate, inst.absenteeismRate, PERIODS.length, seedBase + 5, cfg.absenteeismRate?.jitter ?? 0.4),
       publicationsCount: genRamp(cfg.publicationsCount?.start ?? inst.publicationsCount, inst.publicationsCount, PERIODS.length, seedBase + 6, cfg.publicationsCount?.jitter ?? 1.4),
     }
 
     out[inst.id] = PERIODS.map((period, i) => ({
       period,
-      successRate:       series.successRate[i],
-      dropoutRate:       series.dropoutRate[i],
-      budgetExecution:   series.budgetExecution[i],
+      successRate: series.successRate[i],
+      dropoutRate: series.dropoutRate[i],
+      budgetExecution: series.budgetExecution[i],
       employabilityRate: series.employabilityRate[i],
-      absenteeismRate:   series.absenteeismRate[i],
+      absenteeismRate: series.absenteeismRate[i],
       publicationsCount: Math.round(series.publicationsCount[i]),
     }))
   })

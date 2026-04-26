@@ -29,27 +29,29 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [userRole, setUserRole] = useState('Directeur')
+  const [userRole, setUserRole] = useState('Directeur UCAR')
   const [userInstitution, setUserInstitution] = useState('')
   const [userFunction, setUserFunction] = useState('')
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
-    setUserRole(localStorage.getItem('userRole') || 'Directeur')
+    setUserRole(localStorage.getItem('userRole') || 'Directeur UCAR')
     setUserInstitution(localStorage.getItem('userInstitution') || '')
     setUserFunction(localStorage.getItem('userFunction') || '')
     setIsClient(true)
   }, [])
 
   const filteredNavItems = navItems.filter(item => {
-    // Directeur sees everything
-    if (userRole === 'Directeur') return true
-    // Directeur de l'université sees everything except multi-institution comparison
-    if (userRole === 'Directeur de l\'université') {
-      if (item.href === '/dashboard/institutions') return false
+    // Directeur UCAR sees everything
+    if (userRole === 'Directeur UCAR') return true
+
+    // Directeur Institut sees everything except multi-institution comparison
+    if (userRole === 'Directeur Institut') {
+      if (item.href === '/dashboard/institutions' || item.href === '/dashboard/comparison') return false
       return true
     }
-    // Staff: limited nav — no institutions, no comparison
+
+    // Staff Institut: limited nav — no institutions, no comparison
     if (item.href === '/dashboard/institutions' || item.href === '/dashboard/comparison') {
       return false
     }
@@ -72,30 +74,28 @@ export default function Sidebar() {
     show: { opacity: 1, x: 0, transition: { type: "spring" as const, stiffness: 70 } }
   }
 
-  // Display info based on role
   const getAvatarInitials = () => {
-    if (userRole === 'Directeur') return 'DR'
-    if (userRole === 'Directeur de l\'université') return 'DU'
+    if (userRole === 'Directeur UCAR') return 'DU'
+    if (userRole === 'Directeur Institut') return 'DI'
     return 'ST'
   }
 
   const getDisplayName = () => {
-    if (userRole === 'Directeur') return 'Directeur UCAR'
-    if (userRole === 'Directeur de l\'université') return `Dir. ${userInstitution || 'Université'}`
-    // Staff: show the domain label
+    if (userRole === 'Directeur UCAR') return 'Directeur UCAR'
+    if (userRole === 'Directeur Institut') return `Dir. ${userInstitution || 'Institut'}`
     const domainLabel = kpiFamilies.find(f => f.key === userFunction)?.label
-    return domainLabel ? `Staff — ${domainLabel}` : 'Staff'
+    return domainLabel ? `Staff — ${domainLabel}` : 'Staff Institut'
   }
 
   const getDisplayEmail = () => {
-    if (userRole === 'Directeur') return 'rectorat@ucar.tn'
+    if (userRole === 'Directeur UCAR') return 'rectorat@ucar.tn'
     return `contact@${(userInstitution || 'ucar').toLowerCase().replace(/[^a-z]/g, '')}.tn`
   }
 
   return (
     <aside className="bg-white border-r border-slate-200 w-56 min-h-screen fixed left-0 top-0 pt-16 flex flex-col z-40">
       <nav className="flex-1 px-0 py-4">
-        <motion.ul 
+        <motion.ul
           variants={listVariants}
           initial="hidden"
           animate="show"
@@ -109,14 +109,14 @@ export default function Sidebar() {
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 w-full transition-all relative group overflow-hidden",
-                    isActive 
-                      ? "bg-cyan-50 text-cyan-700 font-bold" 
+                    isActive
+                      ? "bg-cyan-50 text-cyan-700 font-bold"
                       : "text-slate-600 hover:bg-slate-50 font-medium"
                   )}
                 >
                   {/* Active Indicator Line */}
                   {isActive && (
-                    <motion.div 
+                    <motion.div
                       layoutId="active-nav-indicator"
                       className="absolute right-0 top-0 bottom-0 w-1.5 bg-cyan-500 rounded-l-full"
                       initial={{ opacity: 0 }}
@@ -124,9 +124,9 @@ export default function Sidebar() {
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  
-                  <motion.div 
-                    whileHover={{ scale: 1.1, rotate: 5 }} 
+
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
                     whileTap={{ scale: 0.95 }}
                     className={isActive ? "text-cyan-600" : "text-slate-400 group-hover:text-slate-600"}
                   >
@@ -140,7 +140,7 @@ export default function Sidebar() {
         </motion.ul>
       </nav>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.5 }}

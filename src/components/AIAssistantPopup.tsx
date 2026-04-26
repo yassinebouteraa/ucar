@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Bot, Send, User, Sparkles, X } from 'lucide-react'
+import { Bot, Send, User, Sparkles, X, Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const suggestions = [
   "Pourquoi le taux d'abandon à l'INSAT augmente chaque semestre ?",
@@ -29,7 +30,17 @@ export default function AIAssistantPopup() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState(initialMessages)
   const [input, setInput] = useState('')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+    }
+    fetchUser()
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -41,25 +52,78 @@ export default function AIAssistantPopup() {
     }
   }, [messages, isOpen])
 
-  const handleSend = () => {
-    if (!input.trim()) return
-    const userMsg: Message = { role: 'user', text: input, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    setMessages([...messages, userMsg])
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return
+    const currentInput = input.trim()
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    
+    const userMsg: Message = { 
+      role: 'user', 
+      text: currentInput, 
+      time: currentTime 
+    }
+    
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setInput('')
+    setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    // Persist user message to DB
+    if (userId) {
+      await supabase.from('conversation_turns').insert({
+        user_id: userId,
+        role: 'user',
+        content: currentInput,
+        metadata: { time: currentTime }
+      })
+    }
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: currentInput, history: messages })
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur API');
+      }
+
+      const aiTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       const aiMsg: Message = {
         role: 'ai',
-        text: "Réponse ancrée dans les KPIs ingérés. UCARIA a retrouvé les passages pertinents et généré une synthèse vérifiée.",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: data.reply,
+        time: aiTime,
         verdict: 'pass',
-        citations: [
-          { source: 'kpi_snapshots', period: 'Avril 2026' },
-        ],
       }
+      
       setMessages(prev => [...prev, aiMsg])
-    }, 1000)
+
+      // Persist AI response to DB
+      if (userId) {
+        await supabase.from('conversation_turns').insert({
+          user_id: userId,
+          role: 'ai',
+          content: aiMsg.text,
+          metadata: { 
+            time: aiTime,
+            verdict: 'pass',
+          }
+        })
+      }
+    } catch (error: any) {
+      console.error(error);
+      const errorMsg: Message = {
+        role: 'ai',
+        text: `Désolé, une erreur est survenue: ${error.message}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }
+      setMessages(prev => [...prev, errorMsg])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -163,13 +227,15 @@ export default function AIAssistantPopup() {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Posez votre question..."
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-inner"
+              disabled={isLoading}
+              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs focus:outline-none focus:border-cyan-500 focus:bg-white transition-all shadow-inner disabled:opacity-50"
             />
             <button 
               onClick={handleSend}
-              className="w-10 h-10 bg-cyan-500 text-white rounded-xl flex items-center justify-center hover:bg-cyan-600 transition-all shadow-md active:scale-95 flex-shrink-0"
+              disabled={isLoading || !input.trim()}
+              className="w-10 h-10 bg-cyan-500 text-white rounded-xl flex items-center justify-center hover:bg-cyan-600 transition-all shadow-md active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send size={16} />
+              {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
         </div>

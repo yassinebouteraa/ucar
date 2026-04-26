@@ -3,13 +3,23 @@
 import { Search, Bell, Settings, LogOut, User, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+
+interface PendingUser {
+  id: string
+  full_name: string
+  role: string
+  institution_id: string | null
+  email: string
+}
 
 export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const [hasPendingAuth, setHasPendingAuth] = useState(false)
-  const [pendingAuthDetails, setPendingAuthDetails] = useState({ name: '', inst: '', role: '' })
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([])
+  const [currentUserRole, setCurrentUserRole] = useState('')
+  const [currentUserEmail, setCurrentUserEmail] = useState('')
 
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
@@ -24,20 +34,62 @@ export default function Navbar() {
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
-    
-    // Check for pending auth
-    const pending = localStorage.getItem('hasPendingAuthRequest') === 'true'
-    if (pending) {
-      setHasPendingAuth(true)
-      setPendingAuthDetails({
-        name: localStorage.getItem('pendingAuthName') || 'Nouveau membre',
-        inst: localStorage.getItem('pendingAuthInst') || 'Une institution',
-        role: localStorage.getItem('pendingAuthRole') || 'Staff'
+
+    const role = localStorage.getItem('userRole') || ''
+    setCurrentUserRole(role)
+
+    // Fetch current user's email from Supabase session
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) setCurrentUserEmail(data.user.email)
+    })
+
+    // Fetch pending approval requests based on role
+    const inst = localStorage.getItem('userInstitution') || ''
+    if (role === 'Directeur UCAR' || role === 'Président UCAR' || role === 'Directeur Institut') {
+      let query = supabase.from('users').select('id, full_name, role, institution_id, email').eq('status', 'pending');
+      if (role === 'Directeur Institut' && inst) {
+        query = query.eq('institution_id', inst);
+      }
+      query.then(({ data, error }) => {
+        let users = data || []
+        // Add mock request for demo
+        users.push({
+          id: 'demo-mock-id',
+          full_name: 'Trésorier',
+          role: 'staff',
+          institution_id: inst || 'inst-insat-0000-0001',
+          email: 'tresorier@uca.tn'
+        })
+        setPendingUsers(users)
+        if (error) console.warn('[Navbar] Could not fetch pending users:', error.message)
       })
     }
 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const isUcarPresident = currentUserRole === 'Directeur UCAR' || currentUserRole === 'Président UCAR';
+  const isDirecteurInst = currentUserRole === 'Directeur Institut';
+  const isStaff = currentUserRole === 'Staff Institut' || currentUserRole === 'Personnel administratif' || currentUserRole === 'Staff';
+
+  const handleApprove = async (userId: string) => {
+    await supabase.from('users').update({ status: 'active' }).eq('id', userId)
+    setPendingUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
+  const handleDeny = async (userId: string) => {
+    await supabase.from('users').update({ status: 'rejected' }).eq('id', userId)
+    setPendingUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
+  const getRoleLabel = (internalRole: string) => {
+    if (internalRole === 'inst_president') return 'Directeur Institut'
+    if (internalRole === 'staff') return 'Staff Institut'
+    return internalRole
+  }
+
+  const displayEmail = currentUserEmail || 'rectorat@ucar.tn'
+  const avatarLetters = displayEmail.slice(0, 2).toUpperCase()
 
   return (
     <motion.header
@@ -49,7 +101,7 @@ export default function Navbar() {
       <div className="flex items-center gap-3">
         <motion.img
           whileHover={{ rotate: 10, scale: 1.05 }}
-          src="/web-logo.jpg" 
+          src="/web-logo.jpg"
           alt="Logo UCAR"
           className="rounded-lg w-8 h-8 object-contain shadow-md shadow-cyan-500/20"
         />
@@ -74,9 +126,9 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4 relative" ref={notificationsRef}>
-          <motion.button 
-            whileHover={{ scale: 1.1 }} 
-            whileTap={{ scale: 0.9 }} 
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setNotificationsOpen(v => !v)}
             className="text-slate-400 hover:text-white transition-colors relative"
           >
@@ -87,7 +139,7 @@ export default function Navbar() {
               className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-[#0F172A]"
             ></motion.span>
           </motion.button>
-          
+
           <AnimatePresence>
             {notificationsOpen && (
               <motion.div
@@ -100,39 +152,39 @@ export default function Navbar() {
                 <div className="px-4 py-3 border-b border-slate-700 flex justify-between items-center bg-[#0F172A]/50">
                   <h3 className="text-xs font-bold text-white uppercase tracking-widest">Notifications</h3>
                   <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                    {2 + (hasPendingAuth ? 1 : 0)} NOUVELLES
+                    {(isStaff ? 1 : 3) + pendingUsers.length} NOUVELLES
                   </span>
                 </div>
-                
-                <div className="max-h-[300px] overflow-y-auto">
-                  {/* Dynamic Pending Auth Notification */}
-                  {hasPendingAuth && (
-                    <div className="px-4 py-3 border-b border-slate-700/50 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors cursor-pointer group">
+
+                <div className="max-h-[360px] overflow-y-auto">
+                  {/* Pending approval requests — only visible to Presidents/Directors */}
+                  {pendingUsers.map(user => (
+                    <div key={user.id} className="px-4 py-3 border-b border-slate-700/50 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors cursor-pointer group">
                       <div className="flex gap-3">
                         <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 mt-1">
                           <User size={14} />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-indigo-300 mb-1">Nouvelle demande d'accès ({pendingAuthDetails.role})</p>
+                          <p className="text-xs font-bold text-indigo-300 mb-1">
+                            Nouvelle demande d'accès ({getRoleLabel(user.role)})
+                          </p>
                           <p className="text-[11px] text-slate-300 group-hover:text-white leading-tight mb-2">
-                            <span className="font-semibold text-white">{pendingAuthDetails.name}</span> demande l'accès en tant que <span className="font-semibold text-white">{pendingAuthDetails.role}</span> pour l'établissement <span className="font-semibold text-white">{pendingAuthDetails.inst}</span>.
+                            <span className="font-semibold text-white">{user.full_name}</span> demande l'accès en tant que{' '}
+                            <span className="font-semibold text-white">{getRoleLabel(user.role)}</span>
+                            {user.institution_id && (
+                              <> pour l'établissement <span className="font-semibold text-white">{user.institution_id}</span></>
+                            )}.
                           </p>
                           <div className="flex gap-2">
-                            <button className="px-3 py-1.5 bg-indigo-500 text-white text-[10px] font-bold rounded shadow-sm hover:bg-indigo-400 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                localStorage.removeItem('hasPendingAuthRequest');
-                                setHasPendingAuth(false);
-                              }}
+                            <button
+                              className="px-3 py-1.5 bg-indigo-500 text-white text-[10px] font-bold rounded shadow-sm hover:bg-indigo-400 transition-colors"
+                              onClick={(e) => { e.stopPropagation(); handleApprove(user.id) }}
                             >
                               Autoriser
                             </button>
-                            <button className="px-3 py-1.5 bg-slate-700 text-white text-[10px] font-bold rounded shadow-sm hover:bg-slate-600 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                localStorage.removeItem('hasPendingAuthRequest');
-                                setHasPendingAuth(false);
-                              }}
+                            <button
+                              className="px-3 py-1.5 bg-slate-700 text-white text-[10px] font-bold rounded shadow-sm hover:bg-slate-600 transition-colors"
+                              onClick={(e) => { e.stopPropagation(); handleDeny(user.id) }}
                             >
                               Refuser
                             </button>
@@ -140,46 +192,70 @@ export default function Navbar() {
                         </div>
                       </div>
                     </div>
+                  ))}
+
+                  {/* Notifications based on Role */}
+                  {!isStaff && (
+                    <>
+                      <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                        <div className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                            <Bell size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">
+                              {isDirecteurInst ? "Votre rapport d'établissement a été généré avec succès." : "Rapport de SUP'COM généré avec succès."}
+                            </p>
+                            <p className="text-[10px] text-slate-400">Il y a 10 minutes</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                        <div className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
+                            <Bell size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">
+                              {isDirecteurInst ? "Alerte : Baisse de performance détectée sur le taux de réussite." : "Alerte : IHEC Carthage — Chute du taux de rétention de 5% ce trimestre."}
+                            </p>
+                            <p className="text-[10px] text-slate-400">Il y a 2 heures</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="px-4 py-3 hover:bg-slate-700/30 transition-colors cursor-pointer group opacity-60">
+                        <div className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 shrink-0">
+                            <Bell size={14} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">
+                              {isDirecteurInst ? "Nouveau fichier de données ingesté avec succès." : "Nouveau fichier ingesté par ISSTE."}
+                            </p>
+                            <p className="text-[10px] text-slate-400">Hier</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
 
-                  {/* Notification 1 */}
-                  <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
-                        <Bell size={14} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Rapport de SUP'COM généré avec succès.</p>
-                        <p className="text-[10px] text-slate-400">Il y a 10 minutes</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Notification 2 */}
-                  <div className="px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors cursor-pointer group">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
-                        <Bell size={14} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Alerte : IHEC Carthage — Chute du taux de rétention de 5% ce trimestre.</p>
-                        <p className="text-[10px] text-slate-400">Il y a 2 heures</p>
+                  {isStaff && (
+                    <div className="px-4 py-3 hover:bg-slate-700/30 transition-colors cursor-pointer group">
+                      <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 shrink-0">
+                          <Bell size={14} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">
+                            Votre accès a été confirmé. N'oubliez pas de mettre à jour les KPIs de votre domaine.
+                          </p>
+                          <p className="text-[10px] text-slate-400">Ce matin</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Notification 3 */}
-                  <div className="px-4 py-3 hover:bg-slate-700/30 transition-colors cursor-pointer group opacity-60">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-500 shrink-0">
-                        <Bell size={14} />
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-slate-200 group-hover:text-white mb-1">Nouveau fichier ingesté par ISSTE.</p>
-                        <p className="text-[10px] text-slate-400">Hier</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="border-t border-slate-700 p-2 bg-[#0F172A]/50">
@@ -199,10 +275,10 @@ export default function Navbar() {
             className="flex items-center gap-3 group"
           >
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors">rectorat@ucar.tn</p>
+              <p className="text-xs font-medium text-white group-hover:text-cyan-400 transition-colors">{displayEmail}</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-white text-xs font-bold ring-2 ring-cyan-500/20">
-              PU
+              {avatarLetters}
             </div>
             <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -219,7 +295,7 @@ export default function Navbar() {
                 {/* Account info */}
                 <div className="px-4 py-3 border-b border-slate-700">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Connecté en tant que</p>
-                  <p className="text-xs font-semibold text-white truncate">rectorat@ucar.tn</p>
+                  <p className="text-xs font-semibold text-white truncate">{displayEmail}</p>
                 </div>
 
                 {/* Menu items */}
@@ -235,7 +311,16 @@ export default function Navbar() {
                 </div>
 
                 <div className="border-t border-slate-700 py-1">
-                  <button onClick={() => window.location.href = '/login'} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors">
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut()
+                      localStorage.removeItem('userRole')
+                      localStorage.removeItem('userInstitution')
+                      localStorage.removeItem('userFunction')
+                      window.location.href = '/login'
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                  >
                     <LogOut size={15} />
                     <span className="font-medium">Se déconnecter</span>
                   </button>

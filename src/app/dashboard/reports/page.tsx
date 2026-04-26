@@ -2,6 +2,7 @@
 
 import DashboardLayout from '@/components/DashboardLayout'
 import { institutions } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
 import { 
   FileDown, 
   Calendar, 
@@ -16,7 +17,8 @@ import {
   FileText,
   MoreVertical,
   ArrowRight,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -34,36 +36,37 @@ export default function ReportsPage() {
   const [selectedInstitution, setSelectedInstitution] = useState('Université de Carthage (Global)')
   const [urgentRequestStatus, setUrgentRequestStatus] = useState<'none' | 'pending' | 'success'>('none')
   const [userRole, setUserRole] = useState<'admin' | 'institute'>('admin')
+  const [currentUserRole, setCurrentUserRole] = useState('')
   const [isClient, setIsClient] = useState(false)
+  const [dbInstitutions, setDbInstitutions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole')
-    // Directeur and Directeur de l'université get admin access to reports
-    setUserRole((role === 'Directeur' || role === 'Directeur de l\'université') ? 'admin' : 'institute')
+    const role = localStorage.getItem('userRole') || ''
+    setCurrentUserRole(role)
+    // Directeur UCAR and Président UCAR get admin access to reports
+    setUserRole((role === 'Directeur UCAR' || role === 'Président UCAR') ? 'admin' : 'institute')
     setIsClient(true)
   }, [])
 
-  // TODO: Remplacer ceci par le fetch réel de Supabase lors de l'intégration
-  /*
   useEffect(() => {
-    async function fetchUserRole() {
-      const supabase = createClientComponentClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        // La table "users" de Supabase contient le rôle selon le schéma
-        const { data: profile } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-        // Si le rôle est "Présidente de l'Université (UCAR)" ou équivalent central
-        setUserRole(profile?.role === 'UCAR_ADMIN' ? 'admin' : 'institute')
+    async function loadInstitutions() {
+      try {
+        const { data } = await supabase.from('institutions').select('*')
+        if (data) setDbInstitutions(data)
+      } catch (err) {
+        console.error("Error loading institutions for reports:", err)
+      } finally {
+        setLoading(false)
       }
     }
-    fetchUserRole()
+    loadInstitutions()
   }, [])
-  */
 
   if (!isClient) return null;
 
   const isFutureDate = selectedPeriod === 'Prévisions Trimestre Prochain'
-  const selectedInst = institutions.find(i => i.name === selectedInstitution)
+  const selectedInst = (dbInstitutions.length > 0 ? dbInstitutions : institutions).find(i => i.name === selectedInstitution)
   const isOffline = selectedInst?.status === 'Hors ligne'
 
   const handleGenerate = () => {
@@ -119,14 +122,18 @@ export default function ReportsPage() {
             </span>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
-            <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-              <Clock size={14} />
-              Historique
-            </button>
-            <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20">
-              <FileDown size={14} />
-              Exporter
-            </button>
+            {currentUserRole === 'Directeur UCAR' && (
+              <button 
+                onClick={() => {
+                  alert("Génération du rapport d'urgence en cours...");
+                  setUrgentRequestStatus('pending');
+                }}
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/20"
+              >
+                <AlertTriangle size={14} />
+                Rapport Urgent
+              </button>
+            )}
           </div>
         </div>
 
@@ -185,7 +192,7 @@ export default function ReportsPage() {
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-4 text-sm appearance-none focus:outline-none focus:border-cyan-500 transition-all font-bold text-slate-700"
                     >
                       <option>Université de Carthage (Global)</option>
-                      {institutions.map(inst => (
+                      {(dbInstitutions.length > 0 ? dbInstitutions : institutions).map(inst => (
                         <option key={inst.id} value={inst.name} disabled={inst.status === 'Hors ligne'}>
                           {inst.name}{inst.status === 'Hors ligne' ? ' — Hors ligne' : ''}
                         </option>
@@ -242,41 +249,19 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              <button 
-                onClick={handleGenerate}
-                disabled={isGenerating || urgentRequestStatus === 'pending' || isOffline}
-                className={`w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                  isOffline
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    : isGenerating || urgentRequestStatus === 'pending'
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                      : isFutureDate
-                        ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-[0.99]'
-                        : 'bg-cyan-500 text-white hover:bg-cyan-600 shadow-lg shadow-cyan-500/20 active:scale-[0.99]'
-                }`}
-              >
-                {isOffline ? (
-                  <>
-                    <FileText size={16} />
-                    Données indisponibles — Hors ligne
-                  </>
-                ) : isGenerating || urgentRequestStatus === 'pending' ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    {isFutureDate ? 'Transmission de la requête...' : 'Consolidation des données en cours...'}
-                  </>
-                ) : isFutureDate ? (
-                  <>
-                    <Clock size={16} />
-                    Demander un rapport urgent (PDF en ~30s)
-                  </>
-                ) : (
-                  <>
-                    <FileText size={16} />
-                    Générer le rapport {selectedInstitution === 'Université de Carthage (Global)' ? 'consolidé UCAR' : selectedInstitution}
-                  </>
-                )}
-              </button>
+              <div className="space-y-4 mt-6">
+                <button 
+                  disabled={true}
+                  className="w-full py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                >
+                  <Clock size={16} />
+                  Génération automatisée verrouillée
+                </button>
+                <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <Calendar size={12} />
+                  Prochain rapport automatique prévu : 29 AVRIL 2026
+                </div>
+              </div>
             </div>
             ) : (
               <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
