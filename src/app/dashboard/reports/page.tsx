@@ -22,7 +22,7 @@ import { useState } from 'react'
 
 const reportHistory = [
   { id: '1', title: 'Rapport Mensuel Mars 2026', date: '29 Mar 2026', size: '1.4 MB', type: 'Mensuel' },
-  { id: '2', title: 'Rapport Urgent — INSAT', date: '15 Mar 2026', size: '0.9 MB', type: 'Urgent' },
+  { id: '2', title: 'Rapport Urgent — SUP\'COM', date: '15 Mar 2026', size: '0.9 MB', type: 'Urgent' },
   { id: '3', title: 'Consolidé UCAR — Février', date: '29 Fév 2026', size: '2.1 MB', type: 'Consolidé' },
   { id: '4', title: 'Rapport Mensuel Janvier 2026', date: '29 Jan 2026', size: '1.2 MB', type: 'Mensuel' },
 ]
@@ -33,6 +33,24 @@ export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('Ce mois (Avril 2026)')
   const [selectedInstitution, setSelectedInstitution] = useState('Université de Carthage (Global)')
   const [urgentRequestStatus, setUrgentRequestStatus] = useState<'none' | 'pending' | 'success'>('none')
+  const [userRole, setUserRole] = useState<'admin' | 'institute'>('admin') // Par défaut admin pour le dev
+
+  // TODO: Remplacer ceci par le fetch réel de Supabase lors de l'intégration
+  /*
+  useEffect(() => {
+    async function fetchUserRole() {
+      const supabase = createClientComponentClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // La table "users" de Supabase contient le rôle selon le schéma
+        const { data: profile } = await supabase.from('users').select('role').eq('id', session.user.id).single()
+        // Si le rôle est "Présidente de l'Université (UCAR)" ou équivalent central
+        setUserRole(profile?.role === 'UCAR_ADMIN' ? 'admin' : 'institute')
+      }
+    }
+    fetchUserRole()
+  }, [])
+  */
 
   const isFutureDate = selectedPeriod === 'Prévisions Trimestre Prochain'
   const selectedInst = institutions.find(i => i.name === selectedInstitution)
@@ -83,21 +101,21 @@ export default function ReportsPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black text-slate-900">Rapports</h1>
             <span className="bg-cyan-100 text-cyan-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-cyan-200">
               Mensuel · Urgent · Consolidé
             </span>
           </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+          <div className="flex gap-3 items-center flex-wrap">
+            <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
               <Clock size={14} />
-              Historique complet
+              Historique
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20">
+            <button className="hidden md:flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-cyan-600 transition-all shadow-lg shadow-cyan-500/20">
               <FileDown size={14} />
-              Exporter PDF
+              Exporter
             </button>
           </div>
         </div>
@@ -130,8 +148,9 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Generation Config (Main) */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
+            {userRole === 'admin' ? (
+              <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Configuration du rapport Universitaire</h2>
                 {isFutureDate ? (
                   <div className="flex items-center gap-2 text-[10px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-2 py-1 rounded">
@@ -249,6 +268,21 @@ export default function ReportsPage() {
                 )}
               </button>
             </div>
+            ) : (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-cyan-500 shadow-sm mb-4 border border-slate-100">
+                  <Calendar size={24} />
+                </div>
+                <h3 className="text-lg font-black text-slate-800 mb-2">Génération Automatique</h3>
+                <p className="text-sm font-medium text-slate-500 max-w-md">
+                  En tant que membre d'établissement, vos rapports sont générés automatiquement par notre système IA à la fin de chaque cycle (le 29 du mois). L'accès aux rapports urgents est réservé à l'administration centrale.
+                </p>
+                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
+                  <CheckCircle2 size={14} />
+                  Prochain rapport prévu : 29 Avril 2026
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar: Historique */}

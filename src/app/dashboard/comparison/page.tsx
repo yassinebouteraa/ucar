@@ -32,6 +32,10 @@ import {
   Check,
   Sparkles,
   Download,
+  X,
+  Plus,
+  RotateCcw,
+  Sliders,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -77,7 +81,6 @@ export default function ComparisonPage() {
 
   // Multi-establishment comparator state (max 3)
   const [selectedInstitutions, setSelectedInstitutions] = useState<string[]>([])
-  const [customKpi, setCustomKpi] = useState<KpiKey>('dropoutRate')
 
   // Seed the custom selection once
   useEffect(() => {
@@ -379,8 +382,6 @@ export default function ComparisonPage() {
           online={online}
           selected={selectedInstitutions}
           setSelected={setSelectedInstitutions}
-          chartKpi={customKpi}
-          setChartKpi={setCustomKpi}
         />
       )}
       </div>
@@ -395,47 +396,21 @@ function CustomComparison({
   online,
   selected,
   setSelected,
-  weights,
-  setWeights,
 }: {
   highlighted: string
   online: Institution[]
   selected: string[]
   setSelected: (s: string[]) => void
-  weights: Record<KpiKey, number>
-  setWeights: (w: Record<KpiKey, number>) => void
 }) {
   const toggleInstitution = (name: string) => {
-    setSelected(selected.includes(name) ? selected.filter(n => n !== name) : [...selected, name])
+    if (selected.includes(name)) {
+      setSelected(selected.filter(n => n !== name))
+    } else {
+      if (selected.length < 3) {
+        setSelected([...selected, name])
+      }
+    }
   }
-
-  const setWeight = (k: KpiKey, v: number) => {
-    setWeights({ ...weights, [k]: Math.max(0, Math.min(100, v)) })
-  }
-
-  const resetWeights = () => {
-    setWeights({
-      successRate: 30,
-      employabilityRate: 25,
-      dropoutRate: 20,
-      budgetExecution: 15,
-      absenteeismRate: 10,
-      publicationsCount: 0,
-    })
-  }
-
-  const equalizeWeights = () => {
-    const active = (Object.keys(weights) as KpiKey[]).filter(k => weights[k] > 0)
-    const count = active.length || 1
-    const share = Math.round(100 / count)
-    const next = { ...weights }
-    ;(Object.keys(weights) as KpiKey[]).forEach(k => {
-      next[k] = active.includes(k) ? share : 0
-    })
-    setWeights(next)
-  }
-
-  const totalWeight = Object.values(weights).reduce((s, v) => s + v, 0)
 
   // Pool of institutions = the ones currently selected
   const pool = useMemo(
@@ -443,63 +418,17 @@ function CustomComparison({
     [selected, online]
   )
 
-  // Compute composite score
-  const composite = useMemo(() => {
-    if (pool.length === 0 || totalWeight === 0) return []
-
-    const activeKpis = (Object.keys(weights) as KpiKey[]).filter(k => weights[k] > 0)
-
-    // Min/max per KPI across the pool for normalization
-    const ranges: Record<string, { min: number; max: number }> = {}
-    activeKpis.forEach(k => {
-      const vals = pool.map(p => p[k] as number)
-      ranges[k] = { min: Math.min(...vals), max: Math.max(...vals) }
-    })
-
-    return pool
-      .map(inst => {
-        const breakdown: { kpi: KpiKey; raw: number; normalized: number; weighted: number }[] = []
-        let total = 0
-        activeKpis.forEach(k => {
-          const spec = KPIS.find(s => s.key === k)!
-          const raw = inst[k] as number
-          const { min, max } = ranges[k]
-          let normalized: number
-          if (max === min) {
-            normalized = 50
-          } else if (spec.higherIsBetter) {
-            normalized = ((raw - min) / (max - min)) * 100
-          } else {
-            normalized = ((max - raw) / (max - min)) * 100
-          }
-          const weighted = normalized * (weights[k] / totalWeight)
-          total += weighted
-          breakdown.push({ kpi: k, raw, normalized, weighted })
-        })
-        return { institution: inst, score: round(total), breakdown }
-      })
-      .sort((a, b) => b.score - a.score)
-  }, [pool, weights, totalWeight])
-
-  const activeKpisOrdered = (Object.keys(weights) as KpiKey[]).filter(k => weights[k] > 0)
-  const KPI_COLORS: Record<KpiKey, string> = {
-    successRate: '#06B6D4',
-    dropoutRate: '#F87171',
-    budgetExecution: '#3B82F6',
-    employabilityRate: '#10B981',
-    absenteeismRate: '#F59E0B',
-    publicationsCount: '#8B5CF6',
-  }
+  const [chartKpi, setChartKpi] = useState<KpiKey>('successRate')
 
   return (
     <div className="space-y-6">
-      {/* Section: Pick institutions */}
+      {/* Section 1: Pick institutions */}
       <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-black text-slate-800">1. Choisir les établissements</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              {selected.length} sélectionné{selected.length > 1 ? 's' : ''} · {online.length} disponibles
+              {selected.length} sélectionné{selected.length > 1 ? 's' : ''} (max 3) · {online.length} disponibles
             </p>
           </div>
           {selected.length > 0 && (
@@ -522,8 +451,11 @@ function CustomComparison({
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all border ${
                   isSelected
                     ? 'bg-cyan-500 text-white border-cyan-500 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50'
+                    : selected.length >= 3
+                      ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-cyan-300 hover:bg-cyan-50/50'
                 }`}
+                disabled={!isSelected && selected.length >= 3}
               >
                 <span
                   className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black"
@@ -540,237 +472,109 @@ function CustomComparison({
         </div>
       </div>
 
-      {/* Section: Pick KPIs and weights */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-black text-slate-800">2. Indicateurs et pondération</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              Activez les KPIs à inclure et ajustez leur poids
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={equalizeWeights}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-100"
-            >
-              Équilibrer
-            </button>
-            <button
-              onClick={resetWeights}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-slate-100"
-            >
-              <RotateCcw size={10} />
-              Réinitialiser
-            </button>
-          </div>
-        </div>
+      {/* Comparisons */}
+      {pool.length > 0 ? (
+        <>
+          {/* Section 2: Comparative Table */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm overflow-hidden">
+            <h2 className="text-sm font-black text-slate-800 mb-4">2. Tableau comparatif des KPIs</h2>
+            <div className="overflow-x-auto -mx-5 px-5">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-4 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 rounded-tl-xl w-1/3">Indicateur</th>
+                    {pool.map((inst, i) => (
+                      <th key={inst.id} className={`py-4 px-3 bg-slate-50 ${i === pool.length - 1 ? 'rounded-tr-xl' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black text-white shadow-sm" style={{ backgroundColor: inst.color }}>
+                            {inst.initials}
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-slate-800">{inst.name}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{inst.type}</p>
+                          </div>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {KPIS.map(spec => (
+                    <tr key={spec.key} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 px-3">
+                        <p className="text-sm font-black text-slate-700">{spec.label}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{spec.family}</p>
+                      </td>
+                      {pool.map(inst => {
+                        const val = inst[spec.key] as number
+                        const displayVal = spec.unit === '%' ? `${val.toFixed(1)}%` : Math.round(val).toString()
+                        
+                        // Compare to others in the pool to highlight best
+                        const poolVals = pool.map(p => p[spec.key] as number)
+                        const isBest = spec.higherIsBetter 
+                          ? val === Math.max(...poolVals) && val > Math.min(...poolVals)
+                          : val === Math.min(...poolVals) && val < Math.max(...poolVals)
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {KPIS.map(spec => {
-            const w = weights[spec.key]
-            const active = w > 0
-            const sharePct = totalWeight > 0 ? Math.round((w / totalWeight) * 100) : 0
-            return (
-              <div
-                key={spec.key}
-                className={`p-4 rounded-xl border transition-all ${
-                  active ? 'bg-cyan-50/30 border-cyan-100' : 'bg-slate-50 border-slate-100'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex items-start gap-2 flex-1 min-w-0">
-                    <button
-                      onClick={() => setWeight(spec.key, active ? 0 : 20)}
-                      className={`mt-0.5 w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                        active ? 'bg-cyan-500 border-cyan-500' : 'border-slate-300 bg-white hover:border-cyan-400'
-                      }`}
-                    >
-                      {active && <span className="w-1.5 h-1.5 bg-white rounded-sm" />}
-                    </button>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black text-slate-800 leading-snug">{spec.label}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                        {spec.family} · {spec.higherIsBetter ? 'plus haut = mieux' : 'plus bas = mieux'}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`text-[11px] font-black flex-shrink-0 ${active ? 'text-cyan-600' : 'text-slate-300'}`}>
-                    {active ? `${sharePct}%` : '—'}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={w}
-                  disabled={!active}
-                  onChange={e => setWeight(spec.key, Number(e.target.value))}
-                  className="w-full accent-cyan-500 disabled:opacity-30"
-                />
-                <p className="text-[9px] text-slate-400 font-bold mt-1">Poids brut : {w}</p>
+                        return (
+                          <td key={inst.id} className="py-4 px-3">
+                            <span className={`text-base font-black ${isBest ? 'text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg' : 'text-slate-600'}`}>
+                              {displayVal}
+                            </span>
+                            {isBest && <span className="ml-2 inline-flex text-emerald-500"><Trophy size={12} /></span>}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 3: Trend Chart */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+              <div>
+                <h2 className="text-sm font-black text-slate-800">3. Tendance comparée sur 10 mois</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                  Évolution temporelle pour les établissements sélectionnés
+                </p>
               </div>
-            )
-          })}
-        </div>
-
-        <div className="mt-4 p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Somme des poids</span>
-          <span className={`text-sm font-black ${totalWeight > 0 ? 'text-cyan-600' : 'text-slate-400'}`}>
-            {totalWeight}
-            <span className="text-[10px] text-slate-400 ml-1">→ normalisée à 100% pour le calcul</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Section: Composite score */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-black text-slate-800">3. Score composite</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-              KPIs normalisés 0-100 sur la sélection · pondérés selon vos curseurs
-            </p>
-          </div>
-        </div>
-
-        {composite.length === 0 ? (
-          <div className="py-10 flex flex-col items-center justify-center text-slate-400">
-            <Sliders size={32} className="mb-3 opacity-40" />
-            <p className="text-sm font-bold text-center">
-              {selected.length === 0
-                ? 'Sélectionnez au moins un établissement.'
-                : totalWeight === 0
-                  ? 'Activez au moins un KPI avec un poids.'
-                  : 'Ajustez vos critères.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {composite.map((c, idx) => {
-              const isHighlighted = c.institution.name === highlighted
-              const widthPct = Math.max(2, Math.min(100, c.score))
-              return (
-                <div
-                  key={c.institution.id}
-                  className={`p-4 rounded-xl border transition-all ${
-                    isHighlighted ? 'bg-cyan-50/40 border-cyan-200' : 'bg-white border-slate-100'
-                  }`}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Indicateur</span>
+                <select
+                  value={chartKpi}
+                  onChange={e => setChartKpi(e.target.value as KpiKey)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-700 appearance-none focus:outline-none focus:border-cyan-500"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-black ${
-                        idx === 0 ? 'bg-emerald-100 text-emerald-700' :
-                        idx === composite.length - 1 ? 'bg-red-100 text-red-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>{idx + 1}</span>
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black" style={{ backgroundColor: c.institution.color }}>
-                        {c.institution.initials}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-800">{c.institution.name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{c.institution.type} · {c.institution.city}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-cyan-600 leading-none">{c.score.toFixed(1)}</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">/ 100</p>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
-                    <div
-                      className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 rounded-full transition-all duration-500"
-                      style={{ width: `${widthPct}%` }}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {c.breakdown.map(b => {
-                      const spec = KPIS.find(s => s.key === b.kpi)!
-                      return (
-                        <span key={b.kpi} className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[9px] font-bold text-slate-600">
-                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: KPI_COLORS[b.kpi] }} />
-                          {spec.label}
-                          <span className="text-slate-400">·</span>
-                          <span className="font-black text-slate-700">{b.normalized.toFixed(0)}</span>
-                          <span className="text-slate-400">×</span>
-                          <span className="font-black text-cyan-600">{Math.round((weights[b.kpi] / totalWeight) * 100)}%</span>
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
+                  {KPIS.map(k => (
+                    <option key={k.key} value={k.key}>{k.family} — {k.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="pt-2 border-t border-slate-50">
+              <TrendChart
+                insts={pool}
+                kpiKey={chartKpi}
+                kpiLabel={KPIS.find(s => s.key === chartKpi)!.label}
+                kpiUnit={KPIS.find(s => s.key === chartKpi)!.unit}
+                highlighted={highlighted}
+                formatVal={(v: number) => KPIS.find(s => s.key === chartKpi)!.unit === '%' ? `${v.toFixed(1)}%` : `${Math.round(v)}`}
+                bare
+              />
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* Section: Grouped chart */}
-      {composite.length > 0 && activeKpisOrdered.length > 0 && (
-        <CustomTrendSection
-          pool={pool}
-          activeKpis={activeKpisOrdered}
-          highlighted={highlighted}
-        />
-      )}
-    </div>
-  )
-}
-
-function CustomTrendSection({
-  pool,
-  activeKpis,
-  highlighted,
-}: {
-  pool: Institution[]
-  activeKpis: KpiKey[]
-  highlighted: string
-}) {
-  const [chartKpi, setChartKpi] = useState<KpiKey>(activeKpis[0] || 'successRate')
-
-  // If the user disables the currently-selected KPI, jump to the first active one.
-  useEffect(() => {
-    if (!activeKpis.includes(chartKpi) && activeKpis[0]) {
-      setChartKpi(activeKpis[0])
-    }
-  }, [activeKpis, chartKpi])
-
-  const spec = KPIS.find(s => s.key === chartKpi)!
-  const fmt = (v: number) => spec.unit === '%' ? `${v.toFixed(1)}%` : `${Math.round(v)}`
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-        <div>
-          <h2 className="text-sm font-black text-slate-800">4. Tendance comparée sur 10 mois</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-            Évolution de l'indicateur choisi pour chaque établissement sélectionné
+        </>
+      ) : (
+        <div className="py-16 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200">
+          <Users size={48} className="mb-4 text-slate-300" />
+          <p className="text-base font-black text-slate-700 mb-1">Aucun établissement sélectionné</p>
+          <p className="text-xs font-medium text-slate-500 text-center max-w-sm">
+            Sélectionnez entre 1 et 3 établissements ci-dessus pour comparer directement leurs indicateurs de performance.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Indicateur</span>
-          <select
-            value={chartKpi}
-            onChange={e => setChartKpi(e.target.value as KpiKey)}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-700 appearance-none focus:outline-none focus:border-cyan-500"
-          >
-            {activeKpis.map(k => {
-              const s = KPIS.find(spec => spec.key === k)!
-              return <option key={k} value={k}>{s.family} — {s.label}</option>
-            })}
-          </select>
-        </div>
-      </div>
-      <TrendChart
-        insts={pool}
-        kpiKey={chartKpi}
-        kpiLabel={spec.label}
-        kpiUnit={spec.unit}
-        highlighted={highlighted}
-        formatVal={fmt}
-        bare
-      />
+      )}
     </div>
   )
 }
