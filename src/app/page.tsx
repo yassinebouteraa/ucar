@@ -64,7 +64,7 @@ export default function LandingPage() {
           </Link>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link 
-              href="/login" 
+              href="/login?register=true" 
               className="bg-cyan-500 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-cyan-600 transition-all shadow-md shadow-cyan-500/20"
             >
               S'inscrire
@@ -109,7 +109,7 @@ export default function LandingPage() {
             <motion.div variants={itemVariants} className="flex items-center gap-8 pt-2">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link
-                  href="/login"
+                  href="/login?register=true"
                   className="bg-cyan-600 text-white px-8 py-4 rounded-full text-base font-bold hover:bg-cyan-700 shadow-xl shadow-cyan-600/20 transition-colors"
                 >
                   Commencer

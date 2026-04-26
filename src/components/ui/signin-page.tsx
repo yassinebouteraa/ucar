@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, LucideIcon, Shield, GraduationCap, UserCircle2, Info, ArrowRight } from "lucide-react";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Google Icon Component
 interface GoogleIconProps {
@@ -445,13 +445,34 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [role, setRole] = useState<Role>('Institution');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [isRegistering, setIsRegistering] = useState(searchParams?.get("register") === "true");
+  const [authStatus, setAuthStatus] = useState<'idle' | 'pending'>('idle');
+  const [loginError, setLoginError] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [institution, setInstitution] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/dashboard');
+    setLoginError("");
+
+    if (isRegistering) {
+      // Simulate account creation
+      setAuthStatus('pending');
+      setIsRegistering(false);
+      setEmail("");
+      setPassword("");
+      setFullName("");
+      setInstitution("");
+    } else {
+      if (authStatus === 'pending') {
+        setLoginError("Accès refusé : Votre compte est en attente de vérification et d'autorisation par le Président.");
+        return;
+      }
+      router.push('/dashboard');
+    }
   };
-
-
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row w-full bg-background">
@@ -459,8 +480,8 @@ const SignIn = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-6">
           <FormHeader 
-            title="UCAR Pulse"
-            subtitle="Système d'Exploitation · Enseignement Supérieur"
+            title={isRegistering ? "Créer un compte" : "UCAR Pulse"}
+            subtitle={isRegistering ? "Rejoignez l'écosystème UCAR" : "Système d'Exploitation · Enseignement Supérieur"}
           />
 
           <Card className="p-6 sm:p-8 shadow-sm border-slate-100">
@@ -495,7 +516,49 @@ const SignIn = () => {
               </p>
             </div>
 
+            {authStatus === 'pending' && !isRegistering && (
+              <div className="mb-6 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2">
+                <Info size={14} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-emerald-800 font-medium leading-relaxed">
+                  Votre demande a été envoyée avec succès. Vous devez attendre la vérification et l'autorisation du Président pour vous connecter.
+                </p>
+              </div>
+            )}
+
+            {loginError && (
+              <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                <Info size={14} className="text-red-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-red-800 font-medium leading-relaxed">
+                  {loginError}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-5">
+              {isRegistering && (
+                <InputField
+                  id="fullName"
+                  type="text"
+                  label="Nom et Prénom"
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  icon={UserCircle2}
+                  required
+                />
+              )}
+              {isRegistering && role === 'Institution' && (
+                <InputField
+                  id="institution"
+                  type="text"
+                  label="Nom de l'institution"
+                  placeholder="ex: ENSTAB"
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                  icon={GraduationCap}
+                  required
+                />
+              )}
               <InputField
                 id="email"
                 type="email"
@@ -525,22 +588,31 @@ const SignIn = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <Link href="#">Mot de passe oublié ?</Link>
+                {!isRegistering && <Link href="#">Mot de passe oublié ?</Link>}
               </div>
 
               <Button type="submit" variant="primary" fullWidth className="group">
-                Se connecter
+                {isRegistering ? "Créer le compte" : "Se connecter"}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </Button>
 
 
             </form>
 
-            <FormFooter 
-              text="Vous n'avez pas de compte ?"
-              linkText="Contactez l'administration"
-              linkHref="#"
-            />
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {isRegistering ? "Vous avez déjà un compte ?" : "Vous n'avez pas de compte ?"}
+              {" "}
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsRegistering(!isRegistering);
+                  setLoginError("");
+                }}
+                className="text-primary hover:underline font-medium"
+              >
+                {isRegistering ? "Se connecter" : "Créer un compte"}
+              </button>
+            </p>
           </Card>
           
           <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-8">
